@@ -12,14 +12,20 @@ import numpy as np
 from fdeops.core.model import FrozenModel
 from fdeops.core.provenance import Provenance
 from fdeops.eval.runner import RunResult, TrialResult
-from fdeops.eval.stats import pass_hat_k, rule_of_three_upper, wilson_interval
+from fdeops.eval.stats import (
+    mde_two_proportions,
+    pass_hat_k,
+    rule_of_three_upper,
+    wilson_interval,
+)
 
 PROVENANCE_NOTE = {
-    Provenance.PIPELINE_TEST: "produced with a stand-in model to test the pipeline; these numbers "
-    "say nothing about any real agent's quality.",
-    Provenance.MEASURED_IN_SIMULATION: "measured on the fictional tenant's simulated world; not "
-    "real customer outcomes.",
-    Provenance.ESTIMATED: "estimated from assumptions; see the assumptions table.",
+    Provenance.PIPELINE_TEST: "A stand-in model made these numbers. They test the pipeline. They "
+    "do not measure the quality of an agent.",
+    Provenance.MEASURED_IN_SIMULATION: "These numbers come from the simulated world of a "
+    "fictional tenant. They are not results from real "
+    "customers.",
+    Provenance.ESTIMATED: "These numbers come from assumptions. Refer to the table of assumptions.",
 }
 
 
@@ -119,6 +125,7 @@ def summarize(run: RunResult) -> RunSummary:
         if s is not None:
             cells[s.details["cell"]] += 1
     latency = _values(results, "perf.latency_ms")
+    overall_rate = sum(r.success for r in results) / len(results) if results else 0.0
     metrics = {
         "retrieval_recall": float(np.mean(_values(results, "retrieval.recall") or [math.nan])),
         "retrieval_mrr": float(np.mean(_values(results, "retrieval.mrr") or [math.nan])),
@@ -136,6 +143,9 @@ def summarize(run: RunResult) -> RunSummary:
         else math.nan,
         "escalation_recall": cells["tp"] / (cells["tp"] + cells["fn"])
         if cells["tp"] + cells["fn"]
+        else math.nan,
+        "mde": mde_two_proportions(len(per_case), min(0.99, max(0.01, overall_rate)))
+        if per_case
         else math.nan,
     }
     return RunSummary(
@@ -179,47 +189,56 @@ def _table(rows: Sequence[SliceStat]) -> list[str]:
 
 def render_markdown(s: RunSummary) -> str:
     lines = [
-        f"> **Provenance: {s.provenance.value}**: {PROVENANCE_NOTE[s.provenance]}",
+        f"> **Provenance: {s.provenance.value}**. {PROVENANCE_NOTE[s.provenance]}",
         "",
         f"# Evaluation run `{s.run_id}`",
         "",
-        f"- Tenant: `{s.tenant_id}` · Agent config: `{s.agent_config_id}` "
-        f"(`{s.agent_config_hash[:19]}`)",
-        f"- Dataset: `{s.dataset_ref}` (`{s.dataset_hash[:19]}`) · Trials per case: {s.trials}",
-        f"- Model: `{s.llm_provider}` · LLM mode: `{s.llm_mode}`",
+        f"- Tenant: `{s.tenant_id}`. Agent configuration: `{s.agent_config_id}` "
+        f"(`{s.agent_config_hash[:19]}`).",
+        f"- Dataset: `{s.dataset_ref}` (`{s.dataset_hash[:19]}`). Trials for each case: "
+        f"{s.trials}.",
+        f"- Model provider: `{s.llm_provider}`. LLM mode: `{s.llm_mode}`.",
         "",
         "## Task success",
         "",
-        f"**{_pct(s.overall.rate)}** of {s.overall.n} trials "
-        f"(95% CI {_pct(s.overall.ci_lo)} – {_pct(s.overall.ci_hi)}, {s.overall.cases} cases).",
+        f"Task success is **{_pct(s.overall.rate)}** of {s.overall.n} trials in "
+        f"{s.overall.cases} cases. The 95% confidence interval is {_pct(s.overall.ci_lo)} to "
+        f"{_pct(s.overall.ci_hi)}.",
         "",
-        "Reliability (pass^k: all k trials of a case succeed): "
-        + ", ".join(f"k={k}: {_pct(v)}" for k, v in s.pass_hat_k.items()),
+        "Reliability (pass^k is the probability that all k trials of a case succeed): "
+        + ", ".join(f"k={k}: {_pct(v)}" for k, v in s.pass_hat_k.items())
+        + ".",
         "",
-        f"Critical violations: {s.critical_violations} in {s.critical_trials} trials "
-        f"(upper 95% bound on the critical-trial rate: {_pct(s.critical_rate_upper)}).",
+        f"Critical violations: {s.critical_violations} in {s.critical_trials} trial(s). The "
+        f"maximum 95% limit of the rate of trials with a critical violation is "
+        f"{_pct(s.critical_rate_upper)}.",
         "",
-        "## By scenario",
+        f"With {s.overall.cases} cases, the minimum change that a test can find is "
+        f"{_pct(s.metrics.get('mde', math.nan))} (two-sided, 80% power).",
+        "",
+        "## Results for each scenario",
         "",
         *_table(s.by_scenario),
         "",
-        "## By tag",
+        "## Results for each tag",
         "",
         *_table(s.by_tag),
         "",
-        "## Evaluator pass rates",
+        "## Pass rate for each evaluator",
         "",
         "| evaluator | pass rate |",
         "|---|---:|",
-        *[f"| {k} | {_pct(v)} |" for k, v in s.evaluator_pass_rates.items()],
+        *[f"| `{k}` | {_pct(v)} |" for k, v in s.evaluator_pass_rates.items()],
         "",
         "## Metrics",
         "",
         "| metric | value |",
         "|---|---:|",
-        *[f"| {k} | {'n/a' if math.isnan(v) else f'{v:,.3f}'} |" for k, v in s.metrics.items()],
+        *[f"| `{k}` | {'n/a' if math.isnan(v) else f'{v:,.3f}'} |" for k, v in s.metrics.items()],
         "",
-        f"Escalation confusion: {s.escalation_confusion}",
+        "Escalation confusion matrix: "
+        + ", ".join(f"{k}={v}" for k, v in s.escalation_confusion.items())
+        + ".",
         "",
     ]
     return "\n".join(lines)

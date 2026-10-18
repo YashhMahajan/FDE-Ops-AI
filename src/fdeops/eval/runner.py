@@ -3,6 +3,7 @@
 from collections.abc import Sequence
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
+from typing import Any
 
 from fdeops import __version__
 from fdeops.agent.config import AgentConfig
@@ -51,6 +52,8 @@ class RunResult(FrozenModel):
     trials: int
     llm_provider: str
     llm_mode: str
+    llm_settings: dict[str, Any] = {}
+    """How to build the same model again (for example, heuristic error rates). Diagnosis uses it."""
     provenance: Provenance
     faults: tuple[FaultRule, ...]
     started_at: datetime
@@ -82,6 +85,7 @@ def run_eval(
     faults: Sequence[FaultRule] = (),
     llm_mode: str = "live",
     clock: Clock | None = None,
+    llm_settings: dict[str, Any] | None = None,
 ) -> RunResult:
     check_dataset(tenant, dataset)
     clock = clock or SystemClock()

@@ -1,4 +1,3 @@
-from functools import cached_property
 from pathlib import Path
 from typing import Literal
 
@@ -24,14 +23,18 @@ class AgentConfig(FrozenModel):
     prompt_version: str = "support_v1"
     retrieval: RetrievalConfig = RetrievalConfig()
     auto_context: bool = True
+    oracle_context: bool = False
+    """Diagnosis only: give the gold sections of the case as the only excerpts. It shows the
+    result with perfect retrieval. It is never a production setting."""
     max_steps: int = 8
     max_turns: int = 3
     policy_guardrail: Literal["observe", "enforce"] = "observe"
     tool_timeout_s: float = 5.0
     retry: RetryPolicy = RetryPolicy()
 
-    @cached_property
+    @property
     def content_hash(self) -> str:
+        # Not cached: pydantic's model_copy would copy a cached value into a changed copy.
         return content_hash(self.model_dump(exclude={"id"}))
 
 

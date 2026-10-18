@@ -115,3 +115,10 @@ def test_rng_isolated_per_case() -> None:
     ds2 = build()["test"]
     assert random.getstate() == rng_state
     assert ds1.cases == ds2.cases
+
+
+def test_dataset_hash_follows_model_copy() -> None:
+    ds = build()["test"]
+    _ = ds.content_hash  # computed before the copy, as in real use
+    smaller = ds.model_copy(update={"cases": ds.cases[:3]})
+    assert smaller.content_hash != ds.content_hash

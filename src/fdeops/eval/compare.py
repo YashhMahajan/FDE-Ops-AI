@@ -29,6 +29,9 @@ class Comparison(FrozenModel):
     by_scenario: dict[str, DiffEstimate]
     scenario_p: dict[str, float]
     holm_p: dict[str, float]
+    by_tag: dict[str, DiffEstimate] = {}
+    tag_p: dict[str, float] = {}
+    tag_holm_p: dict[str, float] = {}
 
 
 def _per_case(run: RunResult) -> dict[str, tuple[str, float]]:
@@ -38,6 +41,21 @@ def _per_case(run: RunResult) -> dict[str, tuple[str, float]]:
         acc[r.case_id].append(r.success)
         scenario[r.case_id] = r.scenario
     return {c: (scenario[c], sum(v) / len(v)) for c, v in acc.items()}
+
+
+def _tags(run: RunResult) -> dict[str, tuple[str, ...]]:
+    return {r.case_id: r.tags for r in run.results}
+
+
+def _grouped(
+    groups: dict[str, list[tuple[float, float]]], seed: int
+) -> tuple[dict[str, DiffEstimate], dict[str, float], dict[str, float]]:
+    diffs, pvals = {}, {}
+    for name, pairs in sorted(groups.items()):
+        ga, gb = [p[0] for p in pairs], [p[1] for p in pairs]
+        diffs[name] = paired_bootstrap_diff(ga, gb, n_resamples=2000, seed=seed)
+        pvals[name] = mcnemar_exact(sum(x > y for x, y in pairs), sum(y > x for x, y in pairs))
+    return diffs, pvals, dict(zip(pvals, holm(list(pvals.values())), strict=True))
 
 
 def compare_runs(a: RunResult, b: RunResult, seed: int = 0) -> Comparison:
@@ -53,14 +71,14 @@ def compare_runs(a: RunResult, b: RunResult, seed: int = 0) -> Comparison:
     a_only = sum(1 for x, y in zip(xa, xb, strict=True) if x > y)
     b_only = sum(1 for x, y in zip(xa, xb, strict=True) if y > x)
     groups: dict[str, list[tuple[float, float]]] = defaultdict(list)
+    tag_groups: dict[str, list[tuple[float, float]]] = defaultdict(list)
+    tags = _tags(a)
     for k, x, y in zip(keys, xa, xb, strict=True):
         groups[pa[k][0]].append((x, y))
-    by_scenario, scenario_p = {}, {}
-    for name, pairs in sorted(groups.items()):
-        ga, gb = [p[0] for p in pairs], [p[1] for p in pairs]
-        by_scenario[name] = paired_bootstrap_diff(ga, gb, n_resamples=2000, seed=seed)
-        scenario_p[name] = mcnemar_exact(sum(x > y for x, y in pairs), sum(y > x for x, y in pairs))
-    adjusted = holm(list(scenario_p.values()))
+        for t in tags.get(k, ()):
+            tag_groups[t].append((x, y))
+    by_scenario, scenario_p, holm_p = _grouped(groups, seed)
+    by_tag, tag_p, tag_holm_p = _grouped(tag_groups, seed)
     n = len(keys)
     return Comparison(
         a_run_id=a.run_id,
@@ -77,7 +95,10 @@ def compare_runs(a: RunResult, b: RunResult, seed: int = 0) -> Comparison:
         mcnemar_p=mcnemar_exact(a_only, b_only),
         by_scenario=by_scenario,
         scenario_p=scenario_p,
-        holm_p=dict(zip(scenario_p, adjusted, strict=True)),
+        holm_p=holm_p,
+        by_tag=by_tag,
+        tag_p=tag_p,
+        tag_holm_p=tag_holm_p,
     )
 
 
@@ -86,25 +107,40 @@ def verdict(c: Comparison, alpha: float = 0.05) -> str:
         return "Regression: B is worse than A"
     if c.diff.lo > 0 and c.mcnemar_p < alpha:
         return "Improvement: B is better than A"
-    return "No credible difference at this sample size"
+    return "No difference: the data does not show that B is better or worse than A"
+
+
+def _diff_rows(
+    items: dict[str, DiffEstimate], p: dict[str, float], adjusted: dict[str, float]
+) -> list[str]:
+    rows = ["| slice | difference | 95% CI | p | Holm p |", "|---|---:|---|---:|---:|"]
+    for name, d in items.items():
+        rows.append(
+            f"| `{name}` | {d.mean:+.3f} | {d.lo:+.3f} to {d.hi:+.3f} | {p[name]:.4f} | "
+            f"{adjusted[name]:.4f} |"
+        )
+    return rows
 
 
 def render_comparison(c: Comparison) -> str:
     lines = [
-        f"# {c.b_config} (B) vs {c.a_config} (A)",
+        f"# Comparison: `{c.b_config}` (B) and `{c.a_config}` (A)",
         "",
-        f"**{verdict(c)}.** Success {c.a_rate:.1%} → {c.b_rate:.1%} over {c.n_pairs} paired "
-        f"cases ({c.trials} trial(s) each, averaged per case); difference {c.diff.mean:+.3f} "
-        f"(95% CI {c.diff.lo:+.3f} to {c.diff.hi:+.3f}); "
-        f"discordant cases A-better={c.a_only}, B-better={c.b_only}; exact sign test "
-        f"p={c.mcnemar_p:.4f}.",
+        f"**{verdict(c)}.**",
         "",
-        "| scenario | diff | 95% CI | p | Holm p |",
-        "|---|---:|---|---:|---:|",
+        f"- Success: {c.a_rate:.1%} (A) and {c.b_rate:.1%} (B), for {c.n_pairs} paired cases.",
+        f"- Each case has {c.trials} trial(s). The comparison uses the mean of the trials of each "
+        "case.",
+        f"- Difference (B minus A): {c.diff.mean:+.3f}. The 95% confidence interval is "
+        f"{c.diff.lo:+.3f} to {c.diff.hi:+.3f}.",
+        f"- Cases where A is better: {c.a_only}. Cases where B is better: {c.b_only}. The exact "
+        f"sign test gives p={c.mcnemar_p:.4f}.",
+        "",
+        "## Results for each scenario",
+        "",
+        *_diff_rows(c.by_scenario, c.scenario_p, c.holm_p),
+        "",
     ]
-    for name, d in c.by_scenario.items():
-        lines.append(
-            f"| {name} | {d.mean:+.3f} | {d.lo:+.3f} to {d.hi:+.3f} | "
-            f"{c.scenario_p[name]:.4f} | {c.holm_p[name]:.4f} |"
-        )
-    return "\n".join(lines) + "\n"
+    if c.by_tag:
+        lines += ["## Results for each tag", "", *_diff_rows(c.by_tag, c.tag_p, c.tag_holm_p), ""]
+    return "\n".join(lines)

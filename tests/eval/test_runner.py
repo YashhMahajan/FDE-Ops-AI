@@ -133,3 +133,18 @@ def test_compare_pairs_at_case_level_not_trial_level(
     assert cmp.n_pairs == len(test_split.cases)
     assert cmp.trials == 2
     assert cmp.a_only + cmp.b_only <= len(test_split.cases)
+
+
+def test_summary_reports_minimum_detectable_effect(clean_run) -> None:  # type: ignore[no-untyped-def]
+    s = summarize(clean_run)
+    assert 0 < s.metrics["mde"] < 1
+    assert "minimum change that a test can find" in render_markdown(s)
+
+
+def test_compare_reports_tags(tenant: Tenant, test_split: Dataset, clean_run) -> None:  # type: ignore[no-untyped-def]
+    stale_cfg = CFG.model_copy(update={"retrieval": RetrievalConfig(include_superseded=True)})
+    stale = run_eval(tenant, stale_cfg, test_split, tenant.pack.heuristic_model(0, {}), trials=2)
+    cmp = compare_runs(clean_run, stale)
+    assert cmp.by_tag["drift_sensitive"].mean < 0
+    assert set(cmp.tag_holm_p) == set(cmp.by_tag)
+    assert "Results for each tag" in render_comparison(cmp)

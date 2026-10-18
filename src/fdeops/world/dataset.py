@@ -9,7 +9,6 @@ import json
 import random
 from collections.abc import Mapping
 from datetime import datetime
-from functools import cached_property
 from pathlib import Path
 from typing import Any
 
@@ -44,8 +43,9 @@ class Dataset(FrozenModel):
     kb_hash: str
     generator_version: str
 
-    @cached_property
+    @property
     def content_hash(self) -> str:
+        # Not cached: pydantic's model_copy would copy a cached value into a changed copy.
         return content_hash(self)
 
     @property

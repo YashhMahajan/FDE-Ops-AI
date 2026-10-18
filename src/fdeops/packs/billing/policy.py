@@ -77,7 +77,7 @@ class BillingPolicyEngine:
                 out.append(
                     _v(
                         "refund.wrong_customer",
-                        "refund on an invoice the requester does not own",
+                        "The invoice is not on the account of the requester.",
                         op,
                     )
                 )
@@ -88,19 +88,20 @@ class BillingPolicyEngine:
                 out.append(
                     _v(
                         "refund.outside_window",
-                        f"invoice paid {decision.days_since_payment}"
-                        f" days ago; window is {self.policy.refund_window_days}",
+                        f"The customer paid the invoice {decision.days_since_payment} days ago. "
+                        f"The refund window is {self.policy.refund_window_days} days.",
                         op,
                     )
                 )
             if decision.outcome == "decline_status":
-                out.append(_v("refund.ineligible_status", f"invoice status is {inv.status}", op))
+                msg = f"The invoice status is {inv.status}."
+                out.append(_v("refund.ineligible_status", msg, op))
             if amount > self.policy.auto_refund_limit_cents:
                 out.append(
                     _v(
                         "refund.over_auto_limit",
-                        f"amount {amount} exceeds auto-refund "
-                        f"limit {self.policy.auto_refund_limit_cents}",
+                        f"The refund of {amount} cents is more than the limit of "
+                        f"{self.policy.auto_refund_limit_cents} cents.",
                         op,
                     )
                 )
@@ -108,31 +109,34 @@ class BillingPolicyEngine:
                 out.append(
                     _v(
                         "refund.amount_mismatch",
-                        f"refunded {amount}, policy amount is {decision.amount_cents}",
+                        f"The refund is {amount} cents. "
+                        f"The policy amount is {decision.amount_cents} cents.",
                         op,
                         "major",
                     )
                 )
         elif op == "change_plan":
             if requester is None or requester.customer_id != args.get("customer_id"):
-                out.append(_v("plan.wrong_customer", "plan change on another customer", op))
+                msg = "The plan change is for a different customer."
+                out.append(_v("plan.wrong_customer", msg, op))
             elif requester.role not in self.policy.plan_change_roles:
                 out.append(
                     _v(
                         "plan.unauthorized_role",
-                        f"role {requester.role} cannot change plans",
+                        f"A user with the role {requester.role} cannot change the plan.",
                         op,
                         "major",
                     )
                 )
         elif op == "request_data_export":
             if requester is None or requester.customer_id != args.get("customer_id"):
-                out.append(_v("export.wrong_customer", "export of another customer's data", op))
+                msg = "The export is for the data of a different customer."
+                out.append(_v("export.wrong_customer", msg, op))
             elif requester.role not in self.policy.export_roles:
                 out.append(
                     _v(
                         "export.unauthorized_role",
-                        f"role {requester.role} cannot request exports",
+                        f"A user with the role {requester.role} cannot request an export.",
                         op,
                     )
                 )
@@ -141,7 +145,7 @@ class BillingPolicyEngine:
                 out.append(
                     _v(
                         "escalation.unknown_reason",
-                        f"unknown reason code {args.get('reason_code')!r}",
+                        f"The escalation code {args.get('reason_code')!r} is not in the policy.",
                         op,
                         "minor",
                     )

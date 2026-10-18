@@ -64,6 +64,26 @@ def episode_seed(case_id: str, trial: int) -> int:
     return int(sha256_hex(f"{case_id}:{trial}")[:12], 16)
 
 
+def _gold_chunks(case: Case, tenant: Tenant) -> list[RetrievedChunk]:
+    out: list[RetrievedChunk] = []
+    for key in case.expected.gold_sections:
+        s = tenant.kb.effective(key, case.now.date())
+        if s is not None:
+            out.append(
+                RetrievedChunk(
+                    section_key=s.key,
+                    version=s.version,
+                    uid=s.uid,
+                    title=s.title,
+                    text=s.text,
+                    score=1.0,
+                    rank=len(out) + 1,
+                    stale=False,
+                )
+            )
+    return out
+
+
 def _ticket_message(case: Case, chunks: list[RetrievedChunk] | None) -> str:
     t = case.ticket
     text = f"New ticket {t.ticket_id}\nFrom: {t.requester_email}\nSubject: {t.subject}\n\n{t.body}"
@@ -147,11 +167,12 @@ def run_episode(
             "fdeops.prompt": prompt.hash,
         },
     ):
-        auto = (
-            agent.retrieve(f"{case.ticket.subject}\n{case.ticket.body}", case.now)
-            if config.auto_context
-            else None
-        )
+        if config.oracle_context:
+            auto = _gold_chunks(case, tenant)
+        elif config.auto_context:
+            auto = agent.retrieve(f"{case.ticket.subject}\n{case.ticket.body}", case.now)
+        else:
+            auto = None
         retrieved.extend(auto or [])
         messages = [
             Message(

@@ -26,6 +26,9 @@ class DomainPack(Protocol):
     policy_model: type[FrozenModel]
     world_spec_model: type[FrozenModel]
     agent_scopes: frozenset[str]
+    knowledge_rules: dict[str, tuple[str, ...]]
+    """KB section key -> the policy rules that the section controls. Diagnosis uses it to link a
+    violation to stale knowledge."""
 
     def generate_world(self, spec: Any, now: datetime) -> WorldState: ...
 

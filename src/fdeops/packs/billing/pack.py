@@ -24,6 +24,12 @@ class BillingPack:
     policy_model: type[FrozenModel] = BillingPolicy
     world_spec_model: type[FrozenModel] = BillingWorldSpec
     agent_scopes = AGENT_SCOPES
+    knowledge_rules: dict[str, tuple[str, ...]] = {
+        "refund-policy#refund-window": ("refund.outside_window",),
+        "refund-policy#large-refunds": ("refund.over_auto_limit",),
+        "data-export#who-can-request": ("export.unauthorized_role",),
+        "plans#changing-plans": ("plan.unauthorized_role",),
+    }
 
     def generate_world(self, spec: BillingWorldSpec, now: datetime) -> BillingState:
         return generate_base_world(spec, now)

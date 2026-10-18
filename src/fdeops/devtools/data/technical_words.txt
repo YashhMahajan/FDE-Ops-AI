@@ -226,3 +226,5 @@ reset
 Two-factor resets and ownership transfers
 past due
 bank statement
+warning
+caution

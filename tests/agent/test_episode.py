@@ -225,3 +225,23 @@ def test_trials_use_distinct_seeds(tenant: Tenant, cases: list[Case], config: Ag
     run_episode(case, tenant, config, ScriptedLLM(responder), trial=0)
     run_episode(case, tenant, config, ScriptedLLM(responder), trial=1)
     assert seeds[0] != seeds[1]
+
+
+def test_oracle_context_gives_only_gold_sections(
+    tenant: Tenant, cases: list[Case], config: AgentConfig
+) -> None:
+    case = first(cases, "payment_failed_help")
+    cfg = config.model_copy(update={"oracle_context": True})
+    llm = ScriptedLLM(
+        lambda r: call("reply_to_customer", ticket_id=case.ticket.ticket_id, message="x")
+    )
+    ep = run_episode(case, tenant, cfg, llm, trial=0)
+    assert {c.section_key for c in ep.retrieved} == set(case.expected.gold_sections)
+    assert all(not c.stale for c in ep.retrieved)
+
+
+def test_config_hash_follows_model_copy(config: AgentConfig) -> None:
+    original = config.content_hash  # computed before the copy, as in real use
+    changed = config.model_copy(update={"max_steps": 3})
+    assert config.content_hash == original
+    assert changed.content_hash != config.content_hash

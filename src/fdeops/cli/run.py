@@ -3,54 +3,14 @@ from pathlib import Path
 import typer
 
 from fdeops.agent.config import load_agent_config
+from fdeops.cli.common import build_llm, parse_rates
 from fdeops.core.errors import FdeOpsError
 from fdeops.eval.compare import compare_runs, render_comparison
 from fdeops.eval.report import load_run, render_markdown, save_run, summarize
 from fdeops.eval.runner import run_eval
-from fdeops.llm.cassette import CassetteStore
-from fdeops.llm.presets import PRESETS, build_provider
-from fdeops.llm.recording import RecordingClient
-from fdeops.llm.retrying import RetryingLLM
-from fdeops.llm.types import LLMClient, LLMMode
-from fdeops.tenancy.loader import Tenant, load_tenant
+from fdeops.llm.types import LLMMode
+from fdeops.tenancy.loader import load_tenant
 from fdeops.world.dataset import load_dataset
-
-
-def _parse_rates(spec: str) -> dict[str, float]:
-    out = {}
-    for part in filter(None, (p.strip() for p in spec.split(","))):
-        name, _, value = part.partition("=")
-        out[name] = float(value)
-    return out
-
-
-def _llm(
-    tenant: Tenant,
-    provider: str,
-    model: str,
-    mode: LLMMode,
-    cassettes: Path | None,
-    base_url: str | None,
-    heuristic_errors: str,
-) -> LLMClient:
-    if mode == LLMMode.REPLAY:
-        if cassettes is None or not cassettes.exists():
-            raise FdeOpsError(f"replay mode needs an existing cassette file (got {cassettes})")
-        return RecordingClient(None, CassetteStore(cassettes), mode, provider_name=provider)
-    inner: LLMClient
-    if provider == "heuristic":
-        inner = tenant.pack.heuristic_model(seed=0, error_rates=_parse_rates(heuristic_errors))
-    elif provider in PRESETS:
-        inner = RetryingLLM(build_provider(provider, model, base_url=base_url))
-    else:
-        raise FdeOpsError(
-            f"unknown provider {provider!r}; use heuristic or one of {sorted(PRESETS)}"
-        )
-    if mode == LLMMode.LIVE:
-        return inner
-    if cassettes is None:
-        raise FdeOpsError(f"mode {mode} needs --cassettes")
-    return RecordingClient(inner, CassetteStore(cassettes), mode, provider_name=provider)
 
 
 def run(
@@ -76,17 +36,19 @@ def run(
                 update={"model": config.model.model_copy(update={"name": model})}
             )
         ds = load_dataset(dataset, split)  # type: ignore[arg-type]
-        llm = _llm(
-            t,
-            config.model.provider,
-            config.model.name,
-            llm_mode,
-            cassettes,
-            base_url,
-            heuristic_errors,
+        settings = {"error_rates": parse_rates(heuristic_errors)} if heuristic_errors else {}
+        llm = build_llm(
+            t, config.model.provider, config.model.name, llm_mode, cassettes, base_url, settings
         )
         result = run_eval(
-            t, config, ds, llm, trials=trials, max_workers=workers, llm_mode=llm_mode.value
+            t,
+            config,
+            ds,
+            llm,
+            trials=trials,
+            max_workers=workers,
+            llm_mode=llm_mode.value,
+            llm_settings=settings,
         )
     except FdeOpsError as e:
         typer.echo(f"error: {e}", err=True)
