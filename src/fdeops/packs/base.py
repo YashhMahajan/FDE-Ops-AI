@@ -1,10 +1,12 @@
 """The contract every domain pack fulfils."""
 
+from collections.abc import Mapping
 from datetime import datetime
 from typing import Any, Protocol
 
 from fdeops.connectors.base import Connector
 from fdeops.core.model import FrozenModel
+from fdeops.llm.types import LLMClient
 from fdeops.world.cases import TicketInput
 from fdeops.world.policy import Violation
 from fdeops.world.scenario import Scenario
@@ -44,6 +46,12 @@ class DomainPack(Protocol):
     def add_customer_reply(
         self, state: Any, ticket_id: str, message: str, now: datetime
     ) -> None: ...
+
+    def heuristic_model(
+        self, seed: int = 0, error_rates: Mapping[str, float] | None = None
+    ) -> LLMClient:
+        """A rule-based stand-in model for pipeline tests (outputs labeled pipeline-test)."""
+        ...
 
     def agent_messages(self, state: Any, ticket_id: str) -> list[str]:
         """Everything the agent said to the customer on this ticket, in order."""

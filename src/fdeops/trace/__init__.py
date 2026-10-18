@@ -1,1 +1,1 @@
-"""Placeholder; see docs/plans."""
+"""Execution traces aligned with OpenTelemetry GenAI semantic conventions."""

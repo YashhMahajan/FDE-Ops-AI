@@ -66,7 +66,7 @@ Secondary purpose, lower priority: developers can point it at their own agents. 
 
 | Constraint | Consequence for the design |
 |---|---|
-| No paid LLM APIs | Open-weight models served on **free cloud GPUs** (e.g. Kaggle notebooks), with every call recorded to cassettes. Everything else replays. Providers stay pluggable, so a user with keys changes one line. |
+| No paid LLM APIs (no OpenAI or Anthropic) | **OpenRouter free models** (preferred) or open-weight models served on **free cloud GPUs** (e.g. vLLM in a Kaggle notebook). Every call is recorded to cassettes; everything else replays. All providers speak the OpenAI-compatible wire format, so switching is one config line. |
 | No Docker or long-running services on the author's Mac (M2, 8 GB) | Local development uses **embedded storage (SQLite) and in-process components only**. Postgres, workers, and the full stack run in **GitHub Actions** service containers and in deploy targets. Docker artifacts still ship and are verified in CI. |
 | No fixed timeline, thoroughness is mandatory | Build in milestones. Each milestone must be complete and tested before the next starts. |
 | Built from scratch | No reuse of the author's other projects. |
@@ -161,9 +161,10 @@ That boundary is deliberate, and documenting it honestly is part of the FDE stor
 ### 5.3 `llm` — model access with record and replay
 
 - `LLMClient` protocol: `complete(request) -> response`. The request holds messages, tools, a response schema, and params. The response holds content, tool calls, usage, and latency.
-- Providers:
-  - `openai_compatible`: any OpenAI-style endpoint (vLLM on Kaggle, llama.cpp server, Ollama, or hosted APIs).
-  - `anthropic`: optional extra, for users with keys.
+- Providers, all free:
+  - `openai_compatible`: one client for the OpenAI-compatible wire format. It needs no OpenAI account.
+  - Presets: `openrouter` (free models, key from `OPENROUTER_API_KEY`, preferred), `vllm` (open models on a free cloud GPU), and `ollama`.
+  - `RetryingLLM` backs off on 429s from rate-limited free tiers.
   - `scripted`: deterministic fixtures for unit tests.
   - `heuristic`: a rule-based stand-in agent model with seeded failure modes. It exercises the full pipeline without any GPU. **Every output it produces is watermarked `pipeline-test` and can never feed a reported result.**
 - **Cassettes**: content-addressed JSONL records keyed by `sha256(provider, model, canonical request)`. Modes:
@@ -376,7 +377,7 @@ Each milestone ends with passing tests and a short "what this proves" note in th
 | M8 | Impact/ROI and insights/opportunities | No |
 | M9 | Web UI + static demo export | No |
 | M10 | Docker, Compose, GitHub Actions, Kaggle recording kit, deploy configs | Written locally, executed externally |
-| M11 | Real recorded runs, benchmark report, portfolio artifacts with real numbers | **Yes** (Kaggle GPU) |
+| M11 | Real recorded runs, benchmark report, portfolio artifacts with real numbers | **Yes** (OpenRouter free models and/or Kaggle GPU) |
 | M12 | Public deploy and demo, external-agent onboarding guide | **Yes** (GitHub, hosting) |
 | — | Start guide outside the repo (how to start, why, what) | Written last |
 

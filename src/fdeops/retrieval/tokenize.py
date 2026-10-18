@@ -1,0 +1,65 @@
+import re
+
+_TOKEN = re.compile(r"[a-z0-9]+")
+STOPWORDS = frozenset(
+    [
+        "a",
+        "an",
+        "and",
+        "are",
+        "as",
+        "at",
+        "be",
+        "but",
+        "by",
+        "can",
+        "do",
+        "does",
+        "for",
+        "from",
+        "has",
+        "have",
+        "how",
+        "i",
+        "if",
+        "in",
+        "is",
+        "it",
+        "its",
+        "me",
+        "my",
+        "of",
+        "on",
+        "or",
+        "our",
+        "so",
+        "that",
+        "the",
+        "their",
+        "them",
+        "then",
+        "there",
+        "these",
+        "this",
+        "to",
+        "us",
+        "was",
+        "we",
+        "were",
+        "what",
+        "when",
+        "where",
+        "which",
+        "who",
+        "why",
+        "will",
+        "with",
+        "you",
+        "your",
+    ]
+)
+
+
+def tokenize(text: str) -> list[str]:
+    """Lowercase alphanumeric tokens without stopwords. Digits are kept: '14 days' must match."""
+    return [t for t in _TOKEN.findall(text.lower()) if t not in STOPWORDS]

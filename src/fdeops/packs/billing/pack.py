@@ -1,3 +1,4 @@
+from collections.abc import Mapping
 from datetime import datetime
 from typing import Any
 
@@ -5,6 +6,7 @@ from fdeops.connectors.base import Connector
 from fdeops.core.model import FrozenModel
 from fdeops.packs.billing.entities import Reply, Ticket
 from fdeops.packs.billing.generator import BillingWorldSpec, generate_base_world
+from fdeops.packs.billing.heuristic import BillingHeuristicLLM
 from fdeops.packs.billing.ops import AGENT_SCOPES, build_billing_connectors
 from fdeops.packs.billing.policy import BillingPolicy, BillingPolicyEngine
 from fdeops.packs.billing.scenarios import SCENARIOS
@@ -74,6 +76,11 @@ class BillingPack:
         t = state.tickets.get(ticket_id)
         # Customer-facing only: escalation notes are internal and are not shown to the customer.
         return [r.message for r in t.replies if r.author == "agent"] if t else []
+
+    def heuristic_model(
+        self, seed: int = 0, error_rates: Mapping[str, float] | None = None
+    ) -> BillingHeuristicLLM:
+        return BillingHeuristicLLM(seed=seed, error_rates=error_rates)
 
     def describe(self) -> dict[str, Any]:
         return {"id": self.id, "scenarios": sorted(SCENARIOS)}
