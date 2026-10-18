@@ -1,12 +1,12 @@
 import pytest
 
+from fdeops.agent.config import apply_patch
 from fdeops.core.errors import ConfigError
 from fdeops.diagnose.classify import classify_run
 from fdeops.diagnose.clusters import cluster_failures
 from fdeops.diagnose.interventions import (
     PLAYBOOK,
     Verdict,
-    apply_patch,
     candidates,
     diagnose_run,
 )

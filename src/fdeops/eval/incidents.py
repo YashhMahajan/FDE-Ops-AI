@@ -10,7 +10,7 @@ import random
 from pathlib import Path
 from typing import Any, Literal
 
-from fdeops.agent.config import AgentConfig
+from fdeops.agent.config import AgentConfig, apply_patch
 from fdeops.connectors.faults import FaultRule
 from fdeops.core.config import load_model, validate_model
 from fdeops.core.errors import ConfigError
@@ -84,8 +84,6 @@ def load_incident(path: Path) -> IncidentSpec:
 
 
 def _patch(config: AgentConfig, patch: dict[str, Any]) -> AgentConfig:
-    from fdeops.diagnose.interventions import apply_patch  # one merge rule for all patches
-
     return apply_patch(config, patch)
 
 

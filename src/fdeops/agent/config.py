@@ -1,8 +1,11 @@
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
+
+from pydantic import ValidationError
 
 from fdeops.connectors.resilience import RetryPolicy
-from fdeops.core.config import load_model
+from fdeops.core.config import format_validation_error, load_model
+from fdeops.core.errors import ConfigError
 from fdeops.core.hashing import content_hash
 from fdeops.core.model import FrozenModel
 from fdeops.retrieval.retriever import RetrievalConfig
@@ -40,3 +43,17 @@ class AgentConfig(FrozenModel):
 
 def load_agent_config(path: Path) -> AgentConfig:
     return load_model(path, AgentConfig)
+
+
+def _merge(base: dict[str, Any], patch: dict[str, Any]) -> dict[str, Any]:
+    out = dict(base)
+    for k, v in patch.items():
+        out[k] = _merge(out[k], v) if isinstance(v, dict) and isinstance(out.get(k), dict) else v
+    return out
+
+
+def apply_patch(config: AgentConfig, patch: dict[str, Any]) -> AgentConfig:
+    try:
+        return AgentConfig.model_validate(_merge(config.model_dump(mode="json"), patch))
+    except ValidationError as e:
+        raise ConfigError(f"intervention patch is not valid: {format_validation_error(e)}") from e

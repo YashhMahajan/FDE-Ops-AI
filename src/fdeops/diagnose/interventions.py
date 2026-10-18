@@ -11,10 +11,7 @@ from collections import defaultdict
 from enum import StrEnum
 from typing import Any
 
-from pydantic import ValidationError
-
-from fdeops.agent.config import AgentConfig
-from fdeops.core.config import format_validation_error
+from fdeops.agent.config import apply_patch
 from fdeops.core.errors import ConfigError
 from fdeops.core.model import FrozenModel
 from fdeops.core.provenance import Provenance
@@ -106,20 +103,6 @@ PLAYBOOK: tuple[Intervention, ...] = (
         applies_to=(FailureClass.TIMEOUT_OR_BUDGET,),
     ),
 )
-
-
-def _merge(base: dict[str, Any], patch: dict[str, Any]) -> dict[str, Any]:
-    out = dict(base)
-    for k, v in patch.items():
-        out[k] = _merge(out[k], v) if isinstance(v, dict) and isinstance(out.get(k), dict) else v
-    return out
-
-
-def apply_patch(config: AgentConfig, patch: dict[str, Any]) -> AgentConfig:
-    try:
-        return AgentConfig.model_validate(_merge(config.model_dump(mode="json"), patch))
-    except ValidationError as e:
-        raise ConfigError(f"intervention patch is not valid: {format_validation_error(e)}") from e
 
 
 def candidates(cluster: FailureCluster) -> list[Intervention]:
