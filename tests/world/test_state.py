@@ -1,6 +1,7 @@
 import pytest
-from fdeops.world.state import Entity, WorldState, diff_states, get_path
 from pydantic import ValidationError
+
+from fdeops.world.state import Entity, WorldState, diff_states, get_path
 
 
 class Widget(Entity):

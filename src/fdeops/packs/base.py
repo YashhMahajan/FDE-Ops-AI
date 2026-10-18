@@ -1,0 +1,50 @@
+"""The contract every domain pack fulfils."""
+
+from datetime import datetime
+from typing import Any, Protocol
+
+from fdeops.connectors.base import Connector
+from fdeops.core.model import FrozenModel
+from fdeops.world.cases import TicketInput
+from fdeops.world.policy import Violation
+from fdeops.world.scenario import Scenario
+from fdeops.world.state import StateChange, WorldState
+from fdeops.world.user_sim import UserSimulator
+
+
+class PolicyChecker(Protocol):
+    def check(
+        self, op: str, args: dict[str, Any], state: Any, requester_email: str, now: datetime
+    ) -> list[Violation]: ...
+
+
+class DomainPack(Protocol):
+    id: str
+    generator_version: str
+    policy_model: type[FrozenModel]
+    world_spec_model: type[FrozenModel]
+    agent_scopes: frozenset[str]
+
+    def generate_world(self, spec: Any, now: datetime) -> WorldState: ...
+
+    def scenarios(self) -> dict[str, Scenario]: ...
+
+    def build_connectors(self, state: Any) -> list[Connector]: ...
+
+    def policy_engine(self, policy: Any) -> PolicyChecker: ...
+
+    def user_simulator(self) -> UserSimulator: ...
+
+    def is_outcome_change(self, change: StateChange) -> bool:
+        """Whether a state change is a business outcome the grader compares against the oracle."""
+        ...
+
+    def open_ticket(self, state: Any, ticket: TicketInput, now: datetime) -> None: ...
+
+    def add_customer_reply(
+        self, state: Any, ticket_id: str, message: str, now: datetime
+    ) -> None: ...
+
+    def agent_messages(self, state: Any, ticket_id: str) -> list[str]:
+        """Everything the agent said to the customer on this ticket, in order."""
+        ...

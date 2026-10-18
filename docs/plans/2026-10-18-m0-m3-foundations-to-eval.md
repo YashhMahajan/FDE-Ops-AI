@@ -9,7 +9,7 @@
 - evaluates the results with confidence intervals.
 
 **Architecture:** Synchronous, layered package `fdeops` with a one-way dependency rule:
-`core → (llm, trace, retrieval, world) → connectors → packs → tenancy → agent → eval → cli`.
+`core → (llm, trace, retrieval) → world → connectors → packs → tenancy → agent → eval → cli`.
 The generic world engine stays separate from domain packs (`packs/billing`). Ground truth is computed, never written by an LLM.
 
 **Tech Stack:** Python ≥3.11, uv, Pydantic v2, PyYAML, jsonschema, numpy, scipy, httpx, Typer. Dev tools: pytest, hypothesis, ruff, mypy, import-linter.

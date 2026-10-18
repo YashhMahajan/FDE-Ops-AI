@@ -2,9 +2,9 @@ from datetime import date
 from pathlib import Path
 
 import pytest
-from fdeops.retrieval.kb import load_kb
 
 from fdeops.core.errors import ConfigError
+from fdeops.retrieval.kb import load_kb
 
 GOOD = Path(__file__).parent.parent / "fixtures" / "kb" / "good"
 
@@ -97,3 +97,16 @@ def test_versions_must_increase_in_time(tmp_path: Path) -> None:
     _write(tmp_path, "a.v2.md", head.format(v=2, d="2026-04-01"))
     with pytest.raises(ConfigError):
         load_kb(tmp_path)
+
+
+def test_section_removed_in_later_version_is_not_current(tmp_path: Path) -> None:
+    head = "---\ndoc_id: a\ntitle: A\nversion: {v}\neffective_from: {d}\n---\n"
+    _write(
+        tmp_path,
+        "a.v1.md",
+        head.format(v=1, d="2026-01-01") + "## Keep {#keep}\nk\n## Old {#old}\no\n",
+    )
+    _write(tmp_path, "a.v2.md", head.format(v=2, d="2026-06-01") + "## Keep {#keep}\nk2\n")
+    kb = load_kb(tmp_path)
+    assert {s.key for s in kb.as_of(date(2026, 7, 1))} == {"a#keep"}
+    assert {s.key for s in kb.as_of(date(2026, 2, 1))} == {"a#keep", "a#old"}

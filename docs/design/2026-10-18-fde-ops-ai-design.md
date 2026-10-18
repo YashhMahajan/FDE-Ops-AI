@@ -114,7 +114,7 @@ Secondary purpose, lower priority: developers can point it at their own agents. 
 
 Dependencies point one way only. `import-linter` enforces it in CI:
 
-`core → (llm, trace, retrieval, world) → connectors → packs → tenancy → agent → eval → diagnose → (improve, release) → (impact, insights) → (api, cli)`
+`core → (llm, trace, retrieval) → world → connectors → packs → tenancy → agent → eval → diagnose → (improve, release) → (impact, insights) → (api, cli)`
 
 The core library is **synchronous** and uses thread pools for parallel trials. That keeps the agent loop and the tests simple to read and debug. The API layer can still serve requests concurrently. (ADR-0003.)
 

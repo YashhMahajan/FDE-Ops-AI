@@ -2,6 +2,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 import pytest
+
 from fdeops.connectors.base import (
     ConnectorRegistry,
     ErrorCode,
@@ -11,7 +12,6 @@ from fdeops.connectors.base import (
     OpSpec,
     ToolError,
 )
-
 from fdeops.core.clock import FakeClock
 
 SCHEMA = {

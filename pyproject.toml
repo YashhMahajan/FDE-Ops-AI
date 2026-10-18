@@ -52,6 +52,10 @@ select = ["E", "F", "I", "B", "UP", "SIM", "RUF"]
 # RUF012: pydantic copies mutable field defaults per instance, so `x: dict = {}` is safe there.
 ignore = ["RUF001", "RUF002", "RUF003", "RUF012"]
 
+[tool.ruff.lint.per-file-ignores]
+# Typer declares CLI options as argument defaults by design.
+"src/fdeops/cli/*" = ["B008"]
+
 [tool.mypy]
 python_version = "3.11"
 plugins = ["pydantic.mypy"]
@@ -77,6 +81,7 @@ layers = [
   "fdeops.tenancy",
   "fdeops.packs",
   "fdeops.connectors",
-  "fdeops.llm | fdeops.trace | fdeops.retrieval | fdeops.world",
+  "fdeops.world",
+  "fdeops.llm | fdeops.trace | fdeops.retrieval",
   "fdeops.core",
 ]

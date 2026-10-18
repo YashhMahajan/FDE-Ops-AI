@@ -3,6 +3,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
+
+from fdeops.core.errors import ConfigError
 from fdeops.retrieval.kb import KnowledgeBase
 from fdeops.world.cases import (
     CaseDraft,
@@ -14,8 +16,6 @@ from fdeops.world.cases import (
 from fdeops.world.dataset import DatasetSpec, build_datasets, load_dataset, save_dataset
 from fdeops.world.scenario import ScenarioContext
 from fdeops.world.state import WorldState
-
-from fdeops.core.errors import ConfigError
 
 NOW = datetime(2026, 9, 15, 12, tzinfo=UTC)
 
