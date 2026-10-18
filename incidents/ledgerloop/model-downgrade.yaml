@@ -1,0 +1,8 @@
+id: model-downgrade
+tenant: ledgerloop
+kind: model_swap
+description: The provider changes the model to a weaker version without notice.
+params:
+  model: {name: weaker-model}
+  llm_settings:
+    error_rates: {wrong_amount: 0.3, miss_escalation: 0.3}

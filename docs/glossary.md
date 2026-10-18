@@ -35,6 +35,7 @@ and 1.12). This glossary is the list of those terms for FDE-Ops-AI. The STE chec
 | guardrail | A check that stops a task before it occurs. |
 | idempotency key | A key that makes sure that a request that the client sends again occurs only one time. |
 | incident | A failure in production, or a simulation of one. |
+| ingest | The step that loads business data, checks each record and writes a data-quality report. |
 | injection | Text that tries to change the instructions of the agent (prompt injection). |
 | judge | A model that gives a score to a reply. |
 | knowledge base (KB) | The help documents of a tenant. |
@@ -64,6 +65,6 @@ These verbs are names of software operations:
 
 - build, cache, call, clone, commit, configure, deploy, download, embed, enforce
 - escalate, evaluate, export, fail, fork, generate, hash, import, index, inject
-- install, lint, load, log, match, merge, parse, pass, push, query
+- ingest, install, lint, load, log, match, merge, parse, pass, push, query
 - raise, rank, record, refund, render, replay, retrieve, retry, return, run
 - save, score, script, search, seed, store, stream, swap, sync, test, upload, validate

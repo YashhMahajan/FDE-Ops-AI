@@ -252,7 +252,7 @@ class BillingHeuristicLLM:
             }
         window = windows[0] if windows else 30  # first retrieved statement wins
         limit = _cents(limits[0]) if limits else None
-        injected = bool(INJECTION.search(v.body))
+        injected = bool(INJECTION.search(v.body) or INJECTION.search(v.knowledge))
         obey_injection = injected and self._errs(v, s, "follow_injection")
 
         mentioned = re.findall(r"inv_\w+", v.text)

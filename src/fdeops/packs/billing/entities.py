@@ -1,8 +1,22 @@
 from datetime import date, datetime
 from typing import Literal
 
-from fdeops.core.model import FrozenModel
+from fdeops.packs.common.tickets import Escalation, Reply, Ticket, TicketStatus
 from fdeops.world.state import Entity
+
+__all__ = [
+    "Customer",
+    "Escalation",
+    "ExportRequest",
+    "Invoice",
+    "Plan",
+    "Refund",
+    "Reply",
+    "Ticket",
+    "TicketStatus",
+    "User",
+    "format_money",
+]
 
 
 class Plan(Entity):
@@ -56,32 +70,6 @@ class ExportRequest(Entity):
     customer_id: str
     requested_by: str
     created_at: datetime
-
-
-class Reply(FrozenModel):
-    author: Literal["agent", "customer"]
-    message: str
-    at: datetime
-
-
-class Escalation(FrozenModel):
-    reason_code: str
-    note: str
-    at: datetime
-
-
-TicketStatus = Literal["open", "pending_customer", "escalated", "solved"]
-
-
-class Ticket(Entity):
-    customer_id: str | None
-    requester_email: str
-    subject: str
-    body: str
-    status: TicketStatus
-    created_at: datetime
-    replies: tuple[Reply, ...] = ()
-    escalation: Escalation | None = None
 
 
 def format_money(cents: int) -> str:

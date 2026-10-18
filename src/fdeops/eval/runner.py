@@ -16,10 +16,12 @@ from fdeops.core.ids import new_id
 from fdeops.core.model import FrozenModel
 from fdeops.core.provenance import Provenance
 from fdeops.eval.evaluators import DEFAULT_EVALUATORS, trial_success
+from fdeops.eval.incidents import IncidentSpec, apply_incident
 from fdeops.eval.types import EvalContext, Evaluator, Score
 from fdeops.llm.types import LLMClient
 from fdeops.retrieval.retriever import Retriever
 from fdeops.tenancy.loader import Tenant
+from fdeops.trace.redact import redact_value
 from fdeops.world.cases import Case
 from fdeops.world.dataset import Dataset
 
@@ -56,6 +58,7 @@ class RunResult(FrozenModel):
     """How to build the same model again (for example, heuristic error rates). Diagnosis uses it."""
     provenance: Provenance
     faults: tuple[FaultRule, ...]
+    incident: IncidentSpec | None = None
     started_at: datetime
     finished_at: datetime
     results: tuple[TrialResult, ...]
@@ -86,8 +89,18 @@ def run_eval(
     llm_mode: str = "live",
     clock: Clock | None = None,
     llm_settings: dict[str, Any] | None = None,
+    incident: IncidentSpec | None = None,
 ) -> RunResult:
     check_dataset(tenant, dataset)
+    base_hash, base_ref = dataset.content_hash, dataset.ref
+    settings = dict(llm_settings or {})
+    if incident is not None:
+        effect = apply_incident(incident, tenant, config, dataset, settings)
+        tenant, config, dataset = effect.tenant, effect.config, effect.dataset
+        faults = (*faults, *effect.faults)
+        if effect.llm_settings != settings and llm.provider == "heuristic":
+            llm = tenant.pack.heuristic_model(0, effect.llm_settings.get("error_rates", {}))
+        settings = effect.llm_settings
     clock = clock or SystemClock()
     started = clock.now()
     retriever = Retriever(tenant.kb, config.retrieval)
@@ -97,6 +110,12 @@ def run_eval(
         case, trial = job
         ep = run_episode(case, tenant, config, llm, trial, faults=faults, retriever=retriever)
         scores = tuple(s for e in evaluators for s in e.evaluate(case, ep, ctx))
+        pii = tenant.config.pii
+        if pii.redact:  # after scoring: scores use the real text, the stored record does not
+            ep = EpisodeResult.model_validate(redact_value(ep.model_dump(mode="json"), pii))
+            scores = tuple(
+                Score.model_validate(redact_value(s.model_dump(mode="json"), pii)) for s in scores
+            )
         return TrialResult(
             case_id=case.id,
             scenario=case.scenario,
@@ -122,14 +141,16 @@ def run_eval(
         tenant_id=tenant.id,
         agent_config=config,
         agent_config_hash=config.content_hash,
-        dataset_ref=dataset.ref,
+        dataset_ref=base_ref,
         dataset_split=dataset.split,
-        dataset_hash=dataset.content_hash,
+        dataset_hash=base_hash,
         trials=trials,
         llm_provider=llm.provider,
         llm_mode=llm_mode,
+        llm_settings=settings,
         provenance=provenance,
         faults=tuple(faults),
+        incident=incident,
         started_at=started,
         finished_at=clock.now(),
         results=results,

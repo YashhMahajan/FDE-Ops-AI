@@ -1,0 +1,9 @@
+id: billing-api-outage
+tenant: ledgerloop
+kind: api_fault
+description: The billing API returns HTTP 503 for half of the calls.
+seed: 7
+params:
+  rules:
+    - {op: issue_refund, kind: error_5xx, probability: 0.5}
+    - {op: get_invoice, kind: error_5xx, probability: 0.5}

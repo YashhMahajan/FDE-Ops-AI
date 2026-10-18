@@ -17,6 +17,11 @@ def validate(root: Path) -> None:
         f"  world: {sum(len(t.base_world.collection(c)) for c in t.base_world.collection_names())}"
         " entities"
     )
+    q = t.data_quality
+    typer.echo(
+        f"  data quality: {sum(q.loaded.values())} records loaded, "
+        f"{sum(q.quarantined.values())} isolated, {len(q.issues)} issue(s)"
+    )
     for spec in t.config.datasets:
         typer.echo(
             f"  dataset {spec.name}@v{spec.version}: {sum(spec.cases_per_scenario.values())} cases"

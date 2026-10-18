@@ -7,7 +7,13 @@ from fdeops.connectors.base import Connector, ErrorCode, OpContext, OpResult, Op
 from fdeops.core.model import FrozenModel
 
 FaultKind = Literal[
-    "timeout_after_success", "timeout", "error_5xx", "rate_limit", "malformed", "expired_credential"
+    "timeout_after_success",
+    "timeout",
+    "error_5xx",
+    "rate_limit",
+    "malformed",
+    "expired_credential",
+    "schema_mismatch",
 ]
 SLOW_MS = 60_000.0
 
@@ -64,6 +70,11 @@ class FaultInjectingConnector:
             "error_5xx": (ErrorCode.UNAVAILABLE, "upstream returned HTTP 503", 30.0),
             "rate_limit": (ErrorCode.RATE_LIMITED, "upstream returned HTTP 429", 10.0),
             "expired_credential": (ErrorCode.UNAUTHENTICATED, "credential expired", 10.0),
+            "schema_mismatch": (
+                ErrorCode.INVALID_ARGUMENT,
+                "the upstream API rejected the request: unknown field (schema version 2)",
+                15.0,
+            ),
         }
         code, message, latency = errors[rule.kind]
         return OpResult.failure(ToolError.of(code, message), latency_ms=latency)

@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import Any, Literal
 
 from fdeops.core.model import FrozenModel
+from fdeops.trace.redact import PIIConfig
 from fdeops.world.dataset import DatasetSpec
 
 
@@ -20,4 +21,5 @@ class TenantConfig(FrozenModel):
     world: TenantWorld
     datasets: list[DatasetSpec] = []
     agent_scopes: tuple[str, ...]
+    pii: PIIConfig = PIIConfig()
     notes: str = ""

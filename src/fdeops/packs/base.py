@@ -26,6 +26,10 @@ class DomainPack(Protocol):
     policy_model: type[FrozenModel]
     world_spec_model: type[FrozenModel]
     agent_scopes: frozenset[str]
+    references: dict[str, dict[str, str]]
+    """collection -> {field: referenced collection}. The ingest step checks these references."""
+    normalizers: dict[str, Any]
+    """collection -> function that cleans one raw record (for example, email case)."""
     knowledge_rules: dict[str, tuple[str, ...]]
     """KB section key -> the policy rules that the section controls. Diagnosis uses it to link a
     violation to stale knowledge."""

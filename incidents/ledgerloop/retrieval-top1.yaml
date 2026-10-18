@@ -1,0 +1,6 @@
+id: retrieval-top1
+tenant: ledgerloop
+kind: retrieval_config_change
+description: A configuration change sets top_k to 1.
+params:
+  retrieval: {top_k: 1}

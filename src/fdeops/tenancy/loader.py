@@ -10,6 +10,7 @@ from fdeops.packs.registry import get_pack
 from fdeops.retrieval.kb import KnowledgeBase, load_kb
 from fdeops.tenancy.config import TenantConfig
 from fdeops.world.dataset import Dataset, DatasetSpec, build_datasets
+from fdeops.world.ingest import DataQualityReport, ingest
 from fdeops.world.state import WorldState
 
 
@@ -22,6 +23,7 @@ class Tenant:
     kb: KnowledgeBase
     base_world: WorldState
     world_now: datetime
+    data_quality: DataQualityReport
 
     @property
     def id(self) -> str:
@@ -70,7 +72,18 @@ def load_tenant(root: Path) -> Tenant:
     policy = load_model(root / config.policy_file, pack.policy_model)
     kb = load_kb(root / config.kb_dir)
     world_spec = validate_model(config.world.spec, pack.world_spec_model, cfg_path)
-    base_world = pack.generate_world(world_spec, config.world.now)
+    generated = pack.generate_world(world_spec, config.world.now)
+    raw = {
+        n: [e.model_dump(mode="json") for e in generated.collection(n).values()]
+        for n in generated.collection_names()
+    }
+    base_world, quality = ingest(
+        raw,
+        type(generated),
+        pack.references,
+        pack.normalizers,
+        source=f"{config.id}/generated-world",
+    )
     for spec in config.datasets:
         unknown = set(spec.cases_per_scenario) - set(pack.scenarios())
         if unknown:
@@ -85,4 +98,5 @@ def load_tenant(root: Path) -> Tenant:
         kb=kb,
         base_world=base_world,
         world_now=config.world.now,
+        data_quality=quality,
     )

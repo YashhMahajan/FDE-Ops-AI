@@ -1,0 +1,9 @@
+id: crm-export-dirty-emails
+tenant: ledgerloop
+kind: data_quality
+description: The CRM export has email addresses with upper case and spaces, and some users have no email.
+seed: 3
+params:
+  collection: users
+  field: email
+  modes: {dirty_case: 0.6, missing: 0.2}

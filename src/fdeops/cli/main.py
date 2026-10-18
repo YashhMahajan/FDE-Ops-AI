@@ -13,6 +13,7 @@ app.command("run")(run.run)
 app.command("report")(run.report)
 app.command("compare")(run.compare)
 app.command("diagnose")(diagnose.diagnose)
+app.command("incidents")(run.incidents)
 
 
 @app.command()

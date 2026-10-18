@@ -6,6 +6,7 @@ from fdeops.agent.config import load_agent_config
 from fdeops.cli.common import build_llm, parse_rates
 from fdeops.core.errors import FdeOpsError
 from fdeops.eval.compare import compare_runs, render_comparison
+from fdeops.eval.incidents import load_incident
 from fdeops.eval.report import load_run, render_markdown, save_run, summarize
 from fdeops.eval.runner import run_eval
 from fdeops.llm.types import LLMMode
@@ -25,6 +26,7 @@ def run(
     base_url: str | None = typer.Option(None, help="Override the provider base URL"),
     heuristic_errors: str = typer.Option("", help="e.g. wrong_amount=0.2,miss_escalation=0.1"),
     workers: int = typer.Option(4, min=1),
+    incident: Path | None = typer.Option(None, help="An incident file (incidents/<tenant>/*.yaml)"),
     out: Path = typer.Option(Path("runs"), help="Where run artifacts are written"),
 ) -> None:
     """Evaluate an agent configuration on a dataset split."""
@@ -75,3 +77,10 @@ def compare(run_a: Path, run_b: Path) -> None:
     except FdeOpsError as e:
         typer.echo(f"error: {e}", err=True)
         raise typer.Exit(1) from e
+
+
+def incidents(folder: Path = typer.Argument(Path("incidents"))) -> None:
+    """List the incident files in a folder."""
+    for path in sorted(folder.rglob("*.yaml")):
+        spec = load_incident(path)
+        typer.echo(f"{path}: [{spec.kind}] {spec.id}: {spec.description}")

@@ -50,6 +50,7 @@ class RunSummary(FrozenModel):
     llm_provider: str
     llm_mode: str
     trials: int
+    incident: str | None = None
     overall: SliceStat
     pass_hat_k: dict[str, float]
     by_scenario: list[SliceStat]
@@ -158,6 +159,9 @@ def summarize(run: RunResult) -> RunSummary:
         provenance=run.provenance,
         llm_provider=run.llm_provider,
         llm_mode=run.llm_mode,
+        incident=f"{run.incident.id} ({run.incident.kind}): {run.incident.description}"
+        if run.incident
+        else None,
         trials=run.trials,
         overall=_slice("overall", results),
         pass_hat_k={
@@ -198,6 +202,7 @@ def render_markdown(s: RunSummary) -> str:
         f"- Dataset: `{s.dataset_ref}` (`{s.dataset_hash[:19]}`). Trials for each case: "
         f"{s.trials}.",
         f"- Model provider: `{s.llm_provider}`. LLM mode: `{s.llm_mode}`.",
+        *([f"- Incident: {s.incident}"] if s.incident else []),
         "",
         "## Task success",
         "",

@@ -49,3 +49,9 @@ def test_scope_not_offered_by_pack_rejected(tmp_path: Path) -> None:
     cfg.write_text(cfg.read_text().replace("  - kb:read", "  - kb:read\n  - root:everything"))
     with pytest.raises(ConfigError):
         load_tenant(root)
+
+
+def test_generated_world_passes_ingest_cleanly() -> None:
+    t = load_tenant(LEDGERLOOP)
+    assert t.data_quality.ok
+    assert t.data_quality.loaded["customers"] == 40

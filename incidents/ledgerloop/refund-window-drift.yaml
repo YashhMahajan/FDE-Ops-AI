@@ -1,0 +1,10 @@
+# The refund window changed from 30 days to 14 days on 2026-09-01. The index was not rebuilt, thus
+# it still has the previous section next to the new one.
+id: refund-window-drift
+tenant: ledgerloop
+kind: doc_drift
+description: The refund-policy change is published, but the old section stays in the index.
+params:
+  retrieval:
+    include_superseded: true
+    freshness_filter: false

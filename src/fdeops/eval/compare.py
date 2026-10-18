@@ -59,6 +59,8 @@ def _grouped(
 
 
 def compare_runs(a: RunResult, b: RunResult, seed: int = 0) -> Comparison:
+    if a.tenant_id != b.tenant_id:
+        raise ConfigError(f"runs belong to different tenants ({a.tenant_id} and {b.tenant_id})")
     if a.dataset_hash != b.dataset_hash:
         raise ConfigError(
             "runs used different datasets; a paired comparison is not valid "

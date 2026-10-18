@@ -17,8 +17,9 @@ from fdeops.connectors.base import (
     OpSpec,
 )
 from fdeops.core.ids import stable_id
-from fdeops.packs.billing.entities import Escalation, ExportRequest, Refund, Reply
+from fdeops.packs.billing.entities import ExportRequest, Refund
 from fdeops.packs.billing.state import BillingState
+from fdeops.packs.common.tickets import build_ticketing_connector
 
 AGENT_SCOPES = frozenset(
     {
@@ -161,35 +162,6 @@ def build_billing_connectors(state: BillingState) -> list[InProcessConnector]:
         state.upsert("export_requests", req)
         return {"export_request": req.model_dump(mode="json")}
 
-    def _ticket(ticket_id: str) -> Any:
-        t = state.tickets.get(ticket_id)
-        if t is None:
-            raise _not_found("ticket")
-        return t
-
-    def reply_to_customer(args: dict[str, Any], ctx: OpContext) -> Any:
-        t = _ticket(args["ticket_id"])
-        reply = Reply(author="agent", message=args["message"], at=ctx.clock.now())
-        state.upsert(
-            "tickets", t.model_copy(update={"replies": (*t.replies, reply), "status": "solved"})
-        )
-        return {"ticket_id": t.id, "status": "solved"}
-
-    def ask_clarifying_question(args: dict[str, Any], ctx: OpContext) -> Any:
-        t = _ticket(args["ticket_id"])
-        reply = Reply(author="agent", message=args["question"], at=ctx.clock.now())
-        state.upsert(
-            "tickets",
-            t.model_copy(update={"replies": (*t.replies, reply), "status": "pending_customer"}),
-        )
-        return {"ticket_id": t.id, "status": "pending_customer"}
-
-    def escalate_to_human(args: dict[str, Any], ctx: OpContext) -> Any:
-        t = _ticket(args["ticket_id"])
-        esc = Escalation(reason_code=args["reason_code"], note=args["note"], at=ctx.clock.now())
-        state.upsert("tickets", t.model_copy(update={"escalation": esc, "status": "escalated"}))
-        return {"ticket_id": t.id, "status": "escalated"}
-
     accounts: dict[str, tuple[OpSpec, Handler]] = {
         "lookup_customer": (
             _spec(
@@ -261,46 +233,8 @@ def build_billing_connectors(state: BillingState) -> list[InProcessConnector]:
             request_data_export,
         ),
     }
-    ticketing: dict[str, tuple[OpSpec, Handler]] = {
-        "reply_to_customer": (
-            _spec(
-                "reply_to_customer",
-                "Send the final reply to the customer and solve the ticket.",
-                _obj({"ticket_id": _ID, "message": _TEXT}, ["ticket_id", "message"]),
-                "tickets:write",
-                mutating=True,
-                terminal="reply",
-            ),
-            reply_to_customer,
-        ),
-        "ask_clarifying_question": (
-            _spec(
-                "ask_clarifying_question",
-                "Ask the customer for missing information and wait.",
-                _obj({"ticket_id": _ID, "question": _TEXT}, ["ticket_id", "question"]),
-                "tickets:write",
-                mutating=True,
-                terminal="clarify",
-            ),
-            ask_clarifying_question,
-        ),
-        "escalate_to_human": (
-            _spec(
-                "escalate_to_human",
-                "Hand the ticket to a human specialist with a reason code.",
-                _obj(
-                    {"ticket_id": _ID, "reason_code": _ID, "note": _TEXT},
-                    ["ticket_id", "reason_code", "note"],
-                ),
-                "tickets:escalate",
-                mutating=True,
-                terminal="escalate",
-            ),
-            escalate_to_human,
-        ),
-    }
     return [
         InProcessConnector("accounts", accounts),
         InProcessConnector("billing", billing),
-        InProcessConnector("ticketing", ticketing),
+        build_ticketing_connector(state),
     ]

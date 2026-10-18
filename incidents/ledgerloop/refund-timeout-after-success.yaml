@@ -1,0 +1,7 @@
+id: refund-timeout-after-success
+tenant: ledgerloop
+kind: api_fault
+description: The refund succeeds, but the response comes after the timeout. A retry must not refund two times.
+params:
+  rules:
+    - {op: issue_refund, kind: timeout_after_success, times: 1}

@@ -32,6 +32,7 @@ from fdeops.retrieval.retriever import RetrievedChunk, Retriever
 from fdeops.tenancy.loader import Tenant
 from fdeops.trace.spans import SpanKind, Trace, Tracer
 from fdeops.world.cases import Case
+from fdeops.world.ingest import RecordIssue, insert_records
 from fdeops.world.policy import Violation
 from fdeops.world.state import StateChange, diff_states
 
@@ -58,6 +59,8 @@ class EpisodeResult(FrozenModel):
     audit_ok: bool
     trace: Trace
     error: str | None = None
+    data_issues: tuple[RecordIssue, ...] = ()
+    """Problems that the ingest step found in the case data (for example, a missing email)."""
 
 
 def episode_seed(case_id: str, trial: int) -> int:
@@ -109,7 +112,7 @@ def run_episode(
     rng = random.Random(seed)
 
     state: Any = tenant.base_world.copy()
-    state.insert_fixtures(case.fixtures)
+    data_issues, *_ = insert_records(state, case.fixtures, pack.references, pack.normalizers)
     pack.open_ticket(state, case.ticket, case.now)
     before = state.copy()
 
@@ -244,6 +247,7 @@ def run_episode(
         llm_latency_ms=llm_ms,
         tool_latency_ms=sum(c.latency_ms for c in tool_calls),
         audit_ok=audit.verify() is None,
+        data_issues=tuple(data_issues),
         trace=tracer.trace(),
         error=error,
     )
