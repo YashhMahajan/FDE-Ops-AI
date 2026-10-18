@@ -23,7 +23,9 @@ datasets:
     test_fraction: 0.6
     cases_per_scenario:
       refund_eligible: 12
-      refund_outside_window: 12
+      # Sized so the drift-sensitive slice (~half of these) can show a significant regression
+      # after Holm correction across 12 scenarios: an exact sign test needs >= 9 discordant cases.
+      refund_outside_window: 40
       refund_over_limit: 8
       refund_needs_invoice: 8
       invoice_explain: 8

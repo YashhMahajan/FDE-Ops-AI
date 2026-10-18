@@ -1,0 +1,19 @@
+# Release candidate v1 for Ledgerloop, run against a real (free) model.
+# provider: openrouter | vllm | ollama | custom. Choose a free OpenRouter model id (ids ending in
+# ":free") and pass it with --model, or set it here.
+id: ledgerloop-v1
+model:
+  provider: openrouter
+  name: CHOOSE-A-FREE-MODEL:free
+  temperature: 0.0
+  max_tokens: 800
+prompt_version: support_v1
+retrieval:
+  mode: hybrid
+  top_k: 4
+  # v1 shipped before the 2026-09-01 refund-policy change; the old version is still indexed.
+  include_superseded: true
+  freshness_filter: false
+max_steps: 8
+max_turns: 3
+policy_guardrail: observe

@@ -1,0 +1,10 @@
+# Pipeline-test: same stand-in model, but the superseded refund policy is still indexed (the v1
+# deployment state). Used to demonstrate stale-knowledge detection end to end.
+id: ledgerloop-heuristic-stale
+model:
+  provider: heuristic
+  name: heuristic-billing-1
+retrieval:
+  mode: hybrid
+  top_k: 4
+  include_superseded: true

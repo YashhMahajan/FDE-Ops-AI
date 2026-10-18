@@ -1,0 +1,9 @@
+# Pipeline-test configuration: the rule-based stand-in model. Results are labeled pipeline-test.
+id: ledgerloop-heuristic
+model:
+  provider: heuristic
+  name: heuristic-billing-1
+retrieval:
+  mode: hybrid
+  top_k: 4
+  include_superseded: false

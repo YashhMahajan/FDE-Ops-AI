@@ -17,7 +17,7 @@ def test_cli_build_writes_manifest(tmp_path: Path) -> None:
         (tmp_path / "ledgerloop" / "support-core@v1" / "manifest.json").read_text()
     )
     total = manifest["splits"]["dev"]["n_cases"] + manifest["splits"]["test"]["n_cases"]
-    assert total == 92
+    assert total == 120
     assert "sha256:" in result.output
 
 

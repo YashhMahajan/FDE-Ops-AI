@@ -198,11 +198,7 @@ def run_episode(
         (i for i, c in enumerate(tool_calls) if c.op == "ask_clarifying_question" and c.ok), None
     )
     first_action = next(
-        (
-            i
-            for i, c in enumerate(tool_calls)
-            if c.ok and c.mutating and not c.op.endswith(("_customer", "_question", "_to_human"))
-        ),
+        (i for i, c in enumerate(tool_calls) if c.ok and c.mutating and c.terminal is None),
         None,
     )
     agent_msgs = tuple(pack.agent_messages(state, case.ticket.ticket_id))

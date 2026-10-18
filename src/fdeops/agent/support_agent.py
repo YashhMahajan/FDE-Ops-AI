@@ -17,6 +17,7 @@ from fdeops.connectors.base import ConnectorRegistry, ErrorCode, OpContext, OpRe
 from fdeops.core.errors import FdeOpsError
 from fdeops.core.hashing import canonical_json
 from fdeops.core.model import FrozenModel
+from fdeops.llm.cassette import CassetteMiss
 from fdeops.llm.types import LLMClient, LLMRequest, LLMResponse, Message, ToolCall, ToolSpec, Usage
 from fdeops.retrieval.retriever import RetrievedChunk, Retriever
 from fdeops.trace.spans import SpanKind, Tracer
@@ -53,6 +54,7 @@ class ToolCallRecord(FrozenModel):
     latency_ms: float
     attempts: int
     mutating: bool
+    terminal: str | None = None
     turn: int
     span_id: str
 
@@ -156,6 +158,8 @@ class SupportAgent:
         ) as span:
             try:
                 response = self.llm.complete(request)
+            except CassetteMiss:
+                raise  # a replay set that doesn't cover the run is a setup error, not agent quality
             except FdeOpsError as e:
                 span.status, span.error = "error", f"{type(e).__name__}: {e}"
                 result.error = span.error
@@ -214,6 +218,7 @@ class SupportAgent:
                     latency_ms=op_result.latency_ms,
                     attempts=op_result.attempts,
                     mutating=bool(spec and spec.mutating),
+                    terminal=spec.terminal if spec else None,
                     turn=turn,
                     span_id=span.span_id,
                 )

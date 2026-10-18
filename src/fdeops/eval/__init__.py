@@ -1,1 +1,1 @@
-"""Placeholder; see docs/plans."""
+"""Evaluation engine: evaluators, judges, runner, statistics and reports."""
