@@ -1,5 +1,7 @@
 """Shared CLI helpers: build the model client that a run or a diagnosis needs."""
 
+import importlib.util
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -47,3 +49,20 @@ def build_llm(
     if cassettes is None:
         raise FdeOpsError(f"mode {mode} needs --cassettes")
     return RecordingClient(inner, CassetteStore(cassettes), mode, provider_name=provider)
+
+
+def load_external_agent(spec: str) -> Callable[..., None]:
+    """Load ``path/to/file.py:function``. This runs code from the operator's own file."""
+    path_text, _, name = spec.rpartition(":")
+    path = Path(path_text)
+    if not path_text or not name or not path.exists():
+        raise FdeOpsError(f"external agent must be path/to/file.py:function (got {spec!r})")
+    module_spec = importlib.util.spec_from_file_location(f"fdeops_external_{path.stem}", path)
+    if module_spec is None or module_spec.loader is None:
+        raise FdeOpsError(f"cannot load {path}")
+    module = importlib.util.module_from_spec(module_spec)
+    module_spec.loader.exec_module(module)
+    fn = getattr(module, name, None)
+    if not callable(fn):
+        raise FdeOpsError(f"{path} has no function {name!r}")
+    return fn  # type: ignore[no-any-return]

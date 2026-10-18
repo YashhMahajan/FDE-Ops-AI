@@ -1,0 +1,21 @@
+# An example REST connector for a customer CRM. Load it with
+# fdeops.connectors.rest.load_rest_connector. The token comes from the environment.
+name: crm
+base_url: https://crm.customer.example/api
+auth: {header: Authorization, env: CRM_TOKEN, prefix: "Bearer "}
+timeout_s: 10
+operations:
+  - name: lookup_customer
+    description: Find the contact and the account for an email address.
+    method: GET
+    path: /contacts
+    scope: accounts:read
+    query: {email: email}
+    parameters:
+      type: object
+      properties: {email: {type: string}}
+      required: [email]
+      additionalProperties: false
+    response:
+      path: data.0
+      fields: {id: contactId, email: primaryEmail, customer_id: accountRef}

@@ -72,6 +72,7 @@ def _words_file(text: str) -> list[str]:
 
 def _clean(line: str) -> str:
     line = re.sub(r"`[^`]*`", " CODE ", line)
+    line = re.sub(r'"[^"]{1,80}"', " QUOTE ", line)  # rule 8.6: quoted text is one word
     line = re.sub(r"\{[A-Za-z_][A-Za-z0-9_]*\}", " CODE ", line)  # template placeholders
     line = re.sub(r"!?\[([^\]]*)\]\([^)]*\)", r"\1", line)
     line = re.sub(r"https?://\S+", " URL ", line)

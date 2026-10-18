@@ -10,6 +10,19 @@ All entries use ASD-STE100. Refer to the [glossary](docs/glossary.md).
 - `fdeops docs check` finds the STE rules that a program can find: words that are not approved, sentence length, paragraph length, semicolons and contractions. CI runs it.
 - The glossary gives the technical nouns and technical verbs of the project.
 
+### M5: Integrations and a second tenant
+
+- A second fictional tenant, Parcelpoint (shipping SaaS), on the same platform. It has a new logistics pack with 11 scenarios: shipment tracking, late shipments, address changes, claims, legal risk, identity and injection. The policy, the risk tolerance, the scopes and the PII rules are different from Ledgerloop. Parcelpoint has its own drift: the claim limit changed from $500 to $300.
+- Ingest of business data: validation, normalization and reference checks, with a data-quality report. The ingest step isolates bad records and tells the record, the field and the cause. Tenant worlds and case fixtures use it.
+- PII redaction (email, card, phone and tenant patterns such as addresses). It occurs after the scores, thus the scores use the real text and the stored runs keep no PII.
+- Incidents as YAML files. An incident run keeps the base dataset hash, thus a paired comparison with the baseline is correct. These are the seven incident types:
+  - API faults, document drift and data quality,
+  - prompt injection in tickets or in the KB,
+  - model changes, retrieval changes and tool schema changes.
+- An adapter for external Python agents (`ToolBox`, `--external file.py:function`). External agents use the same connector stack and the same evaluators.
+- A REST connector that a YAML file configures, with field maps, typed HTTP errors, idempotency headers and secrets from the environment.
+- *What this shows:* a new tenant needs configuration and, for a new domain, one pack. Dirty data, outages and injected text give reports, not failures.
+
 ### M4: Diagnosis
 
 - A deterministic classifier gives each failed trial a primary failure class from a fixed taxonomy of 14 classes. A causal sequence selects the class, and each label has evidence (spans, violations, stale chunks, scores).

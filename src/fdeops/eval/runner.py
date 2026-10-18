@@ -7,7 +7,7 @@ from typing import Any
 
 from fdeops import __version__
 from fdeops.agent.config import AgentConfig
-from fdeops.agent.episode import EpisodeResult, run_episode
+from fdeops.agent.episode import EpisodeResult, ExternalAgent, run_episode, run_external_episode
 from fdeops.connectors.faults import FaultRule
 from fdeops.core.clock import Clock, SystemClock
 from fdeops.core.errors import ConfigError
@@ -81,7 +81,7 @@ def run_eval(
     tenant: Tenant,
     config: AgentConfig,
     dataset: Dataset,
-    llm: LLMClient,
+    llm: LLMClient | None,
     trials: int = 1,
     evaluators: Sequence[Evaluator] = DEFAULT_EVALUATORS,
     max_workers: int = 4,
@@ -90,7 +90,11 @@ def run_eval(
     clock: Clock | None = None,
     llm_settings: dict[str, Any] | None = None,
     incident: IncidentSpec | None = None,
+    external_agent: ExternalAgent | None = None,
 ) -> RunResult:
+    """Evaluate ``config`` with ``llm`` (the reference agent) or with ``external_agent``."""
+    if (llm is None) == (external_agent is None):
+        raise ConfigError("give exactly one of llm and external_agent")
     check_dataset(tenant, dataset)
     base_hash, base_ref = dataset.content_hash, dataset.ref
     settings = dict(llm_settings or {})
@@ -98,7 +102,7 @@ def run_eval(
         effect = apply_incident(incident, tenant, config, dataset, settings)
         tenant, config, dataset = effect.tenant, effect.config, effect.dataset
         faults = (*faults, *effect.faults)
-        if effect.llm_settings != settings and llm.provider == "heuristic":
+        if effect.llm_settings != settings and llm is not None and llm.provider == "heuristic":
             llm = tenant.pack.heuristic_model(0, effect.llm_settings.get("error_rates", {}))
         settings = effect.llm_settings
     clock = clock or SystemClock()
@@ -108,7 +112,13 @@ def run_eval(
 
     def one(job: tuple[Case, int]) -> TrialResult:
         case, trial = job
-        ep = run_episode(case, tenant, config, llm, trial, faults=faults, retriever=retriever)
+        if external_agent is not None:
+            ep = run_external_episode(
+                case, tenant, config, external_agent, trial, faults=faults, retriever=retriever
+            )
+        else:
+            assert llm is not None
+            ep = run_episode(case, tenant, config, llm, trial, faults=faults, retriever=retriever)
         scores = tuple(s for e in evaluators for s in e.evaluate(case, ep, ctx))
         pii = tenant.config.pii
         if pii.redact:  # after scoring: scores use the real text, the stored record does not
@@ -130,9 +140,16 @@ def run_eval(
     jobs = [(c, t) for c in dataset.cases for t in range(trials)]
     with ThreadPoolExecutor(max_workers=max_workers) as pool:
         results = tuple(pool.map(one, jobs))
+    provider = (
+        f"external:{getattr(external_agent, '__name__', 'agent')}"
+        if external_agent is not None
+        else llm.provider
+        if llm is not None
+        else "none"
+    )
     provenance = (
         Provenance.PIPELINE_TEST
-        if llm.provider in STAND_IN_PROVIDERS
+        if provider in STAND_IN_PROVIDERS
         else Provenance.MEASURED_IN_SIMULATION
     )
     return RunResult(
@@ -145,7 +162,7 @@ def run_eval(
         dataset_split=dataset.split,
         dataset_hash=base_hash,
         trials=trials,
-        llm_provider=llm.provider,
+        llm_provider=provider,
         llm_mode=llm_mode,
         llm_settings=settings,
         provenance=provenance,

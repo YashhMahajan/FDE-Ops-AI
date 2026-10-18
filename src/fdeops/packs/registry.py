@@ -1,8 +1,9 @@
 from fdeops.core.errors import ConfigError
 from fdeops.packs.base import DomainPack
 from fdeops.packs.billing.pack import BillingPack
+from fdeops.packs.logistics.pack import LogisticsPack
 
-_PACKS: dict[str, DomainPack] = {"billing": BillingPack()}
+_PACKS: dict[str, DomainPack] = {"billing": BillingPack(), "logistics": LogisticsPack()}
 
 
 def get_pack(pack_id: str) -> DomainPack:

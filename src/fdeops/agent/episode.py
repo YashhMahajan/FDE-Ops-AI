@@ -5,8 +5,10 @@ permission guard → policy monitor → resilience (timeouts, retries, idempoten
 → the domain APIs.
 """
 
+import json
 import random
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
+from dataclasses import dataclass
 from typing import Any
 
 from fdeops.agent.config import AgentConfig
@@ -15,6 +17,7 @@ from fdeops.agent.support_agent import (
     SupportAgent,
     ToolCallRecord,
     TurnOutcome,
+    TurnResult,
     format_chunks,
 )
 from fdeops.connectors.audit import AuditLog
@@ -27,7 +30,7 @@ from fdeops.core.clock import FakeClock
 from fdeops.core.hashing import sha256_hex
 from fdeops.core.ids import stable_id
 from fdeops.core.model import FrozenModel
-from fdeops.llm.types import LLMClient, Message, Usage
+from fdeops.llm.types import LLMClient, Message, ToolCall, Usage
 from fdeops.retrieval.retriever import RetrievedChunk, Retriever
 from fdeops.tenancy.loader import Tenant
 from fdeops.trace.spans import SpanKind, Trace, Tracer
@@ -97,25 +100,44 @@ def _ticket_message(case: Case, chunks: list[RetrievedChunk] | None) -> str:
     return text
 
 
-def run_episode(
+@dataclass
+class _Env:
+    """Everything one episode needs: a private world copy and the full connector stack."""
+
+    case: Case
+    tenant: Tenant
+    config: AgentConfig
+    trial: int
+    clock: FakeClock
+    seed: int
+    state: Any
+    before: Any
+    audit: AuditLog
+    monitors: list[PolicyMonitor]
+    faulty: list[FaultInjectingConnector]
+    registry: ConnectorRegistry
+    tracer: Tracer
+    retriever: Retriever
+    ctx: OpContext
+    data_issues: list[RecordIssue]
+
+
+def _build_env(
     case: Case,
     tenant: Tenant,
     config: AgentConfig,
-    llm: LLMClient,
     trial: int,
-    faults: Sequence[FaultRule] = (),
-    retriever: Retriever | None = None,
-) -> EpisodeResult:
+    faults: Sequence[FaultRule],
+    retriever: Retriever | None,
+) -> _Env:
     pack = tenant.pack
     clock = FakeClock(case.now)
     seed = episode_seed(case.id, trial)
     rng = random.Random(seed)
-
     state: Any = tenant.base_world.copy()
     data_issues, *_ = insert_records(state, case.fixtures, pack.references, pack.normalizers)
     pack.open_ticket(state, case.ticket, case.now)
     before = state.copy()
-
     audit = AuditLog()
     checker = pack.policy_engine(tenant.policy)
     faulty: list[FaultInjectingConnector] = []
@@ -141,18 +163,112 @@ def run_episode(
         )
         monitors.append(monitor)
         stack.append(PermissionGuard(monitor, audit))
-    registry = ConnectorRegistry(stack)
+    return _Env(
+        case=case,
+        tenant=tenant,
+        config=config,
+        trial=trial,
+        clock=clock,
+        seed=seed,
+        state=state,
+        before=before,
+        audit=audit,
+        monitors=monitors,
+        faulty=faulty,
+        registry=ConnectorRegistry(stack),
+        tracer=Tracer(stable_id("trc", case.id, trial, config.content_hash), clock),
+        retriever=retriever or Retriever(tenant.kb, config.retrieval),
+        ctx=OpContext(
+            tenant_id=tenant.id, actor="agent", scopes=tenant.scopes, clock=clock, case_id=case.id
+        ),
+        data_issues=list(data_issues),
+    )
 
-    tracer = Tracer(stable_id("trc", case.id, trial, config.content_hash), clock)
-    retriever = retriever or Retriever(tenant.kb, config.retrieval)
-    agent = SupportAgent(config, llm, registry, retriever, tracer)
+
+def _initial_context(env: _Env, agent: SupportAgent) -> list[RetrievedChunk] | None:
+    if env.config.oracle_context:
+        return _gold_chunks(env.case, env.tenant)
+    if env.config.auto_context:
+        t = env.case.ticket
+        return agent.retrieve(f"{t.subject}\n{t.body}", env.case.now)
+    return None
+
+
+def _customer_answer(env: _Env, tool_calls: Sequence[ToolCallRecord]) -> str | None:
+    question = next(
+        (c.args or {} for c in reversed(tool_calls) if c.op == "ask_clarifying_question" and c.ok),
+        {},
+    )
+    answer = env.tenant.pack.user_simulator().respond(env.case, str(question.get("question", "")))
+    if answer is not None:
+        env.clock.advance(60)
+        env.tenant.pack.add_customer_reply(
+            env.state, env.case.ticket.ticket_id, answer, env.clock.now()
+        )
+    return answer
+
+
+def _finish(
+    env: _Env,
+    *,
+    outcome: TurnOutcome,
+    turns: int,
+    steps: int,
+    messages: Sequence[Message],
+    tool_calls: Sequence[ToolCallRecord],
+    retrieved: Sequence[RetrievedChunk],
+    usage: Usage,
+    llm_ms: float,
+    error: str | None,
+) -> EpisodeResult:
+    first_clarify = next(
+        (i for i, c in enumerate(tool_calls) if c.op == "ask_clarifying_question" and c.ok), None
+    )
+    first_action = next(
+        (i for i, c in enumerate(tool_calls) if c.ok and c.mutating and c.terminal is None), None
+    )
+    agent_msgs = tuple(env.tenant.pack.agent_messages(env.state, env.case.ticket.ticket_id))
+    return EpisodeResult(
+        case_id=env.case.id,
+        trial=env.trial,
+        outcome=outcome,
+        turns=turns,
+        steps=steps,
+        changes=tuple(diff_states(env.before, env.state)),
+        transcript=tuple(messages),
+        tool_calls=tuple(tool_calls),
+        retrieved=tuple(retrieved),
+        violations=tuple(v for m in env.monitors for v in m.violations),
+        blocked=tuple(v for m in env.monitors for v in m.blocked),
+        faults_injected=tuple(f for c in env.faulty for f in c.injected),
+        agent_messages=agent_msgs,
+        final_message=agent_msgs[-1] if agent_msgs else "",
+        clarified_before_action=first_clarify is not None
+        and (first_action is None or first_clarify < first_action),
+        usage=usage,
+        llm_latency_ms=llm_ms,
+        tool_latency_ms=sum(c.latency_ms for c in tool_calls),
+        audit_ok=env.audit.verify() is None,
+        data_issues=tuple(env.data_issues),
+        trace=env.tracer.trace(),
+        error=error,
+    )
+
+
+def run_episode(
+    case: Case,
+    tenant: Tenant,
+    config: AgentConfig,
+    llm: LLMClient,
+    trial: int,
+    faults: Sequence[FaultRule] = (),
+    retriever: Retriever | None = None,
+) -> EpisodeResult:
+    """Run the reference support agent on one case."""
+    env = _build_env(case, tenant, config, trial, faults, retriever)
+    agent = SupportAgent(config, llm, env.registry, env.retriever, env.tracer)
     prompt = load_prompt(config.prompt_version)
     reasons = ", ".join(getattr(tenant.policy, "escalation_reasons", ()))
-    ctx = OpContext(
-        tenant_id=tenant.id, actor="agent", scopes=tenant.scopes, clock=clock, case_id=case.id
-    )
-    user_sim = pack.user_simulator()
-
     tool_calls: list[ToolCallRecord] = []
     retrieved: list[RetrievedChunk] = []
     usage = Usage()
@@ -160,7 +276,7 @@ def run_episode(
     steps = turns = 0
     outcome = TurnOutcome.BUDGET_EXHAUSTED
     error: str | None = None
-    with tracer.span(
+    with env.tracer.span(
         SpanKind.AGENT,
         "episode",
         **{
@@ -170,12 +286,7 @@ def run_episode(
             "fdeops.prompt": prompt.hash,
         },
     ):
-        if config.oracle_context:
-            auto = _gold_chunks(case, tenant)
-        elif config.auto_context:
-            auto = agent.retrieve(f"{case.ticket.subject}\n{case.ticket.body}", case.now)
-        else:
-            auto = None
+        auto = _initial_context(env, agent)
         retrieved.extend(auto or [])
         messages = [
             Message(
@@ -191,7 +302,7 @@ def run_episode(
         ]
         for turn in range(1, config.max_turns + 1):
             turns = turn
-            r = agent.run_turn(messages, ctx, clock.now(), turn, seed + turn)
+            r = agent.run_turn(messages, env.ctx, env.clock.now(), turn, env.seed + turn)
             tool_calls += r.tool_calls
             retrieved += r.retrieved
             steps += r.steps
@@ -203,51 +314,167 @@ def run_episode(
             outcome, error = r.outcome, r.error or error
             if outcome != TurnOutcome.CLARIFY:
                 break
-            question = next(
-                (
-                    c.args or {}
-                    for c in reversed(r.tool_calls)
-                    if c.op == "ask_clarifying_question" and c.ok
-                ),
-                {},
-            )
-            answer = user_sim.respond(case, str(question.get("question", "")))
+            answer = _customer_answer(env, r.tool_calls)
             if answer is None:
                 break
-            clock.advance(60)
-            pack.add_customer_reply(state, case.ticket.ticket_id, answer, clock.now())
             messages.append(Message(role="user", content=f"Customer replied: {answer}"))
-
-    first_clarify = next(
-        (i for i, c in enumerate(tool_calls) if c.op == "ask_clarifying_question" and c.ok), None
-    )
-    first_action = next(
-        (i for i, c in enumerate(tool_calls) if c.ok and c.mutating and c.terminal is None),
-        None,
-    )
-    agent_msgs = tuple(pack.agent_messages(state, case.ticket.ticket_id))
-    return EpisodeResult(
-        case_id=case.id,
-        trial=trial,
+    return _finish(
+        env,
         outcome=outcome,
         turns=turns,
         steps=steps,
-        changes=tuple(diff_states(before, state)),
-        transcript=tuple(messages),
-        tool_calls=tuple(tool_calls),
-        retrieved=tuple(retrieved),
-        violations=tuple(v for m in monitors for v in m.violations),
-        blocked=tuple(v for m in monitors for v in m.blocked),
-        faults_injected=tuple(f for c in faulty for f in c.injected),
-        agent_messages=agent_msgs,
-        final_message=agent_msgs[-1] if agent_msgs else "",
-        clarified_before_action=first_clarify is not None
-        and (first_action is None or first_clarify < first_action),
+        messages=messages,
+        tool_calls=tool_calls,
+        retrieved=retrieved,
         usage=usage,
-        llm_latency_ms=llm_ms,
-        tool_latency_ms=sum(c.latency_ms for c in tool_calls),
-        audit_ok=audit.verify() is None,
-        data_issues=tuple(data_issues),
-        trace=tracer.trace(),
+        llm_ms=llm_ms,
         error=error,
     )
+
+
+class ToolBox:
+    """What an external agent gets for one turn: the ticket, the knowledge and the tools.
+
+    Each call goes through the same connector stack as the reference agent: permission guard,
+    policy monitor, resilience and fault injection. Thus, the platform evaluates an external
+    agent with the same rules and the same evidence.
+    """
+
+    def __init__(
+        self,
+        env: _Env,
+        agent: SupportAgent,
+        turn: int,
+        knowledge: list[RetrievedChunk],
+        customer_replies: list[str],
+        max_calls: int,
+    ) -> None:
+        self._env, self._agent, self._turn = env, agent, turn
+        self.ticket = env.case.ticket
+        self.company = env.tenant.company
+        self.today = env.case.now.date()
+        self.knowledge = list(knowledge)
+        self.customer_replies = list(customer_replies)
+        self.records: list[ToolCallRecord] = []
+        self.retrieved: list[RetrievedChunk] = []
+        self.outcome: TurnOutcome | None = None
+        self._max_calls = max_calls
+        self._turn_result = TurnResult(outcome=TurnOutcome.BUDGET_EXHAUSTED, steps=0)
+
+    def tools(self) -> list[dict[str, Any]]:
+        """Tool definitions in the OpenAI function format."""
+        return [
+            {
+                "type": "function",
+                "function": {
+                    "name": t.name,
+                    "description": t.description,
+                    "parameters": t.parameters,
+                },
+            }
+            for t in self._agent.tools
+        ]
+
+    def call(self, name: str, **args: Any) -> dict[str, Any]:
+        if self.outcome is not None:
+            return {"error": {"code": "INVALID_ARGUMENT", "message": "the turn has ended"}}
+        if len(self.records) >= self._max_calls:
+            self.outcome = TurnOutcome.BUDGET_EXHAUSTED
+            return {"error": {"code": "INVALID_ARGUMENT", "message": "the call budget is used"}}
+        call = ToolCall(
+            id=f"x{len(self.records)}",
+            name=name,
+            arguments=args,
+            raw_arguments=json.dumps(args, default=str),
+        )
+        messages: list[Message] = []
+        terminal = self._agent._run_tools(
+            (call,), messages, self._env.ctx, self._env.clock.now(), self._turn, self._turn_result
+        )
+        self.records = list(self._turn_result.tool_calls)
+        self.retrieved = list(self._turn_result.retrieved)
+        if terminal is not None:
+            self.outcome = terminal
+        payload: dict[str, Any] = json.loads(messages[-1].content)
+        return payload
+
+    def search_kb(self, query: str) -> list[dict[str, Any]]:
+        self.call("search_kb", query=query)
+        return [c.model_dump(mode="json") for c in self._turn_result.retrieved[-10:]]
+
+
+ExternalAgent = Callable[[ToolBox], None]
+
+
+def run_external_episode(
+    case: Case,
+    tenant: Tenant,
+    config: AgentConfig,
+    agent_fn: ExternalAgent,
+    trial: int,
+    faults: Sequence[FaultRule] = (),
+    retriever: Retriever | None = None,
+    max_calls_per_turn: int = 20,
+) -> EpisodeResult:
+    """Run an external Python agent on one case. ``agent_fn`` is called once for each turn."""
+    env = _build_env(case, tenant, config, trial, faults, retriever)
+    helper = SupportAgent(config, _NoModel(), env.registry, env.retriever, env.tracer)
+    tool_calls: list[ToolCallRecord] = []
+    retrieved: list[RetrievedChunk] = []
+    replies: list[str] = []
+    outcome = TurnOutcome.BUDGET_EXHAUSTED
+    error: str | None = None
+    turns = 0
+    with env.tracer.span(
+        SpanKind.AGENT,
+        "external-episode",
+        **{
+            "fdeops.case_id": case.id,
+            "fdeops.trial": trial,
+            "fdeops.agent": getattr(agent_fn, "__name__", "external"),
+        },
+    ):
+        auto = _initial_context(env, helper) or []
+        retrieved.extend(auto)
+        for turn in range(1, config.max_turns + 1):
+            turns = turn
+            box = ToolBox(env, helper, turn, auto, replies, max_calls_per_turn)
+            with env.tracer.span(SpanKind.TURN, f"turn {turn}"):
+                try:
+                    agent_fn(box)
+                except Exception as e:  # the agent under test can fail; the run must not
+                    error = f"{type(e).__name__}: {e}"
+            tool_calls += box.records
+            retrieved += box.retrieved
+            outcome = box.outcome or (
+                TurnOutcome.MODEL_ERROR if error else TurnOutcome.BUDGET_EXHAUSTED
+            )
+            if outcome != TurnOutcome.CLARIFY:
+                break
+            answer = _customer_answer(env, box.records)
+            if answer is None:
+                break
+            replies.append(answer)
+    messages = [
+        Message(role="user", content=_ticket_message(case, auto)),
+        *(Message(role="user", content=f"Customer replied: {r}") for r in replies),
+    ]
+    return _finish(
+        env,
+        outcome=outcome,
+        turns=turns,
+        steps=len(tool_calls),
+        messages=messages,
+        tool_calls=tool_calls,
+        retrieved=retrieved,
+        usage=Usage(),
+        llm_ms=0.0,
+        error=error,
+    )
+
+
+class _NoModel:
+    provider = "external"
+
+    def complete(self, request: Any) -> Any:  # pragma: no cover - never called
+        raise RuntimeError("an external agent does not use the reference model")

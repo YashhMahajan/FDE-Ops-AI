@@ -1,0 +1,10 @@
+# The claim auto-approval limit changed from $500 to $300 on 2026-09-10. The index still has the
+# previous section.
+id: claims-limit-drift
+tenant: parcelpoint
+kind: doc_drift
+description: The claims limit change is published, but the old section stays in the index.
+params:
+  retrieval:
+    include_superseded: true
+    freshness_filter: false

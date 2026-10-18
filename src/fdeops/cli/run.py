@@ -3,7 +3,7 @@ from pathlib import Path
 import typer
 
 from fdeops.agent.config import load_agent_config
-from fdeops.cli.common import build_llm, parse_rates
+from fdeops.cli.common import build_llm, load_external_agent, parse_rates
 from fdeops.core.errors import FdeOpsError
 from fdeops.eval.compare import compare_runs, render_comparison
 from fdeops.eval.incidents import load_incident
@@ -27,6 +27,9 @@ def run(
     heuristic_errors: str = typer.Option("", help="e.g. wrong_amount=0.2,miss_escalation=0.1"),
     workers: int = typer.Option(4, min=1),
     incident: Path | None = typer.Option(None, help="An incident file (incidents/<tenant>/*.yaml)"),
+    external: str | None = typer.Option(
+        None, help="An external Python agent: path/to/file.py:function"
+    ),
     out: Path = typer.Option(Path("runs"), help="Where run artifacts are written"),
 ) -> None:
     """Evaluate an agent configuration on a dataset split."""
@@ -39,9 +42,19 @@ def run(
             )
         ds = load_dataset(dataset, split)  # type: ignore[arg-type]
         settings = {"error_rates": parse_rates(heuristic_errors)} if heuristic_errors else {}
-        llm = build_llm(
-            t, config.model.provider, config.model.name, llm_mode, cassettes, base_url, settings
-        )
+        agent_fn = load_external_agent(external) if external else None
+        llm = None
+        if agent_fn is None:
+            llm = build_llm(
+                t,
+                config.model.provider,
+                config.model.name,
+                llm_mode,
+                cassettes,
+                base_url,
+                settings,
+            )
+        spec = load_incident(incident) if incident else None
         result = run_eval(
             t,
             config,
@@ -51,6 +64,8 @@ def run(
             max_workers=workers,
             llm_mode=llm_mode.value,
             llm_settings=settings,
+            incident=spec,
+            external_agent=agent_fn,
         )
     except FdeOpsError as e:
         typer.echo(f"error: {e}", err=True)

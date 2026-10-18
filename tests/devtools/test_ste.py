@@ -89,3 +89,9 @@ def test_allowlisted_phrases_are_removed_before_word_check(tmp_path: Path) -> No
         f.rule for f in check_text("CI runs in GitHub Actions.", load_rules(allow))
     ]
     assert "1.1" in [f.rule for f in check_text("The actions occur.", load_rules(allow))]
+
+
+def test_quoted_text_counts_as_one_word_and_is_not_checked() -> None:
+    # Rule 8.6: quoted text counts as one word. A quoted status name is a label, not prose.
+    assert rules_hit('The status "label created" means that we have the data.') == []
+    assert count_words('The status "label created and shipped today" is shown.') == 5

@@ -1,0 +1,8 @@
+id: tracking-api-timeouts
+tenant: parcelpoint
+kind: api_fault
+description: The tracking API times out for 30% of the calls.
+seed: 11
+params:
+  rules:
+    - {op: track_shipment, kind: timeout, probability: 0.3}
