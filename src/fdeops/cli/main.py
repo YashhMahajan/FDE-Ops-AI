@@ -1,7 +1,7 @@
 import typer
 
 from fdeops import __version__
-from fdeops.cli import dataset, diagnose, docs, release, run, serve, tenant
+from fdeops.cli import dataset, diagnose, docs, impact, release, run, serve, tenant
 
 app = typer.Typer(
     help="FDE-Ops-AI: evaluate, diagnose and ship AI agents with evidence.", no_args_is_help=True
@@ -21,6 +21,9 @@ app.command("diagnose")(diagnose.diagnose)
 app.command("incidents")(run.incidents)
 app.command("improve")(release.improve)
 app.command("shadow")(release.shadow)
+app.command("baseline")(impact.baseline)
+app.command("impact")(impact.impact)
+app.command("opportunities")(impact.opportunities)
 
 
 @app.command()

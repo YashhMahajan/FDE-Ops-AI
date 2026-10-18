@@ -1,0 +1,10 @@
+# Effort estimates (engineer weeks) for each fix. A person gives these numbers. They are assumptions.
+interventions:
+  freshness_filter: {weeks: 0.5, why: "a filter in the retriever and a reindex job"}
+  current_index_only: {weeks: 1.0, why: "an index rebuild for each KB change"}
+  bm25_retrieval: {weeks: 0.5, why: "a configuration change and a regression run"}
+  larger_top_k: {weeks: 0.3, why: "a configuration change; more tokens for each ticket"}
+  enforce_guardrail: {weeks: 1.5, why: "guardrail rules, agent error handling and a review of false blocks"}
+  more_retries: {weeks: 0.3, why: "a configuration change"}
+  larger_step_budget: {weeks: 0.3, why: "a configuration change; higher cost for each ticket"}
+default_weeks: 2.0

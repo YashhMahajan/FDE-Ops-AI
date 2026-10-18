@@ -21,8 +21,15 @@ from pydantic import BaseModel, Field, field_validator
 from fdeops import __version__
 from fdeops.core.errors import ConfigError, FdeOpsError
 from fdeops.core.ids import new_id
+from fdeops.diagnose.interventions import Diagnosis
 from fdeops.eval.calibration import calibrate
 from fdeops.eval.compare import compare_runs
+from fdeops.impact.costs import load_costs
+from fdeops.impact.measure import measure_run
+from fdeops.impact.report import render_roi
+from fdeops.impact.roi import simulate_roi
+from fdeops.insights.opportunities import build_opportunities, load_effort
+from fdeops.insights.roadmap import render_roadmap
 from fdeops.jobs.handlers import Context
 from fdeops.jobs.handlers import handlers as job_handlers
 from fdeops.jobs.queue import JobQueue
@@ -350,6 +357,37 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         with db.session() as s:
             repo = Repository(s, tenant_id, artifacts)
             return compare_runs(repo.load_run(a), repo.load_run(b)).model_dump(mode="json")
+
+    @app.get("/v1/tenants/{tenant_id}/runs/{run_id}/impact")
+    def run_impact(tenant_id: str, run_id: str, p: Viewer, draws: int = 5000) -> dict[str, Any]:
+        t = ctx.tenant(tenant_id)
+        costs = load_costs(t.root / "costs.yaml")
+        pricing = load_gates(t.root / "gates.yaml").pricing
+        with db.session() as s:
+            run = Repository(s, tenant_id, artifacts).load_run(run_id)
+        roi = simulate_roi(measure_run(run, costs, pricing), costs, draws=min(draws, 50_000))
+        return {**roi.model_dump(mode="json"), "report_md": render_roi(roi)}
+
+    @app.get("/v1/tenants/{tenant_id}/runs/{run_id}/opportunities")
+    def run_opportunities(tenant_id: str, run_id: str, p: Viewer) -> dict[str, Any]:
+        t = ctx.tenant(tenant_id)
+        key = f"runs/{tenant_id}/{run_id}/diagnosis.json"
+        with db.session() as s:
+            run = Repository(s, tenant_id, artifacts).load_run(run_id)
+        if not artifacts.exists(key):
+            raise HTTPException(404, "the run has no diagnosis. Start a diagnosis first")
+        costs = load_costs(t.root / "costs.yaml")
+        opps = build_opportunities(
+            run,
+            Diagnosis.model_validate_json(artifacts.get_text(key)),
+            measure_run(run, costs, load_gates(t.root / "gates.yaml").pricing),
+            costs,
+            load_effort(t.root / "effort.yaml"),
+        )
+        return {
+            "opportunities": [o.model_dump() for o in opps],
+            "roadmap_md": render_roadmap(opps, tenant_id),
+        }
 
     @app.post("/v1/tenants/{tenant_id}/annotations", status_code=201)
     def annotate(tenant_id: str, body: AnnotationRequest, p: Engineer) -> dict[str, Any]:

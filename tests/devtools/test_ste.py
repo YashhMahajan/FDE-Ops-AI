@@ -74,12 +74,13 @@ def test_glossary_terms_are_in_the_allowlist() -> None:
     allowed = load_rules().allowed
     nouns = re.findall(r"^\| ([a-z][a-z \-]+?)(?: \(|\s\|)", glossary, re.M)
     verbs = re.findall(r"^- ([a-z, ]+)$", glossary, re.M)
-    terms = {w for t in nouns for w in t.split()} | {
+    rules = load_rules()
+    phrases = {p.lower() for p in rules.phrases}
+    terms = {w for t in nouns if t.lower() not in phrases for w in t.split()} | {
         v.strip() for line in verbs for v in line.split(",")
     }
     missing = sorted(t for t in terms if t not in allowed and len(t) > 2)
-    approved = load_rules().approved
-    assert [t for t in missing if t not in approved] == []
+    assert [t for t in missing if t not in rules.approved] == []
 
 
 def test_allowlisted_phrases_are_removed_before_word_check(tmp_path: Path) -> None:

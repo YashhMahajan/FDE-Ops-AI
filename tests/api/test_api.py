@@ -178,3 +178,23 @@ def test_request_id_header(env) -> None:  # type: ignore[no-untyped-def]
     client, _, _ = env
     r = client.get("/health")
     assert r.headers.get("x-request-id", "").startswith("req_")
+
+
+def test_impact_and_opportunities_endpoints(env) -> None:  # type: ignore[no-untyped-def]
+    client, keys, _ = env
+    run_id = run_job(
+        client,
+        keys,
+        {**BODY, "agent_config": "agents/ledgerloop-heuristic-stale.yaml", "limit": 30},
+    )
+    v = h(keys["viewer"])
+    imp = client.get(f"/v1/tenants/ledgerloop/runs/{run_id}/impact?draws=500", headers=v)
+    assert imp.status_code == 200 and imp.json()["report_md"].startswith("> **Provenance")
+    assert (
+        client.get(f"/v1/tenants/ledgerloop/runs/{run_id}/opportunities", headers=v).status_code
+        == 404
+    )
+    client.post(f"/v1/tenants/ledgerloop/runs/{run_id}/diagnose", headers=h(keys["engineer"]))
+    client.post("/v1/admin/worker/run-once", headers=h(keys["admin"]))
+    opp = client.get(f"/v1/tenants/ledgerloop/runs/{run_id}/opportunities", headers=v)
+    assert opp.status_code == 200 and "roadmap_md" in opp.json()

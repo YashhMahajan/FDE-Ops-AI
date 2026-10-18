@@ -10,6 +10,16 @@ All entries use ASD-STE100. Refer to the [glossary](docs/glossary.md).
 - `fdeops docs check` finds the STE rules that a program can find: words that are not approved, sentence length, paragraph length, semicolons and contractions. CI runs it.
 - The glossary gives the technical nouns and technical verbs of the project.
 
+### M8: Business impact and product intelligence
+
+- Each tenant has `costs.yaml`. Each value is an assumption with a low value, a likely value, a high value and a source.
+- Measured outcomes for each cost category: automated, correctly escalated, failed and critical.
+- A FAQ baseline without an LLM. The platform runs it as an external agent, thus its numbers are measured with the same rules.
+- ROI with a Monte Carlo simulation. Each assumption comes from its range. Each measured rate comes from its posterior with partial pooling, thus a small category cannot invent a critical-error rate. The report gives percentiles and the probability that the savings are more than zero.
+- Opportunities for each failure cluster: evidence, cost, fix, effort, confidence, and a score with its formula. Inconclusive items go to the list of items that we do not build.
+- A roadmap memo with the three best items and the items that we do not build.
+- Commands: `fdeops baseline`, `fdeops impact` and `fdeops opportunities`. API: `/impact` and `/opportunities` for each run.
+
 ### M7: Storage, API, jobs and authentication
 
 - Database tables for runs, trials, annotations, audit events, API keys and jobs. The same code operates on SQLite (local) and Postgres (CI).

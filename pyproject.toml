@@ -53,7 +53,7 @@ testpaths = ["tests"]
 addopts = "-q --strict-markers"
 filterwarnings = [
   # Raised inside starlette's own test client; not actionable here.
-  "ignore:Using `httpx` with `starlette.testclient` is deprecated:DeprecationWarning",
+  "ignore:Using `httpx` with `starlette.testclient` is deprecated",
 ]
 
 [tool.ruff]
@@ -93,6 +93,8 @@ layers = [
   "fdeops.api",
   "fdeops.jobs",
   "fdeops.storage",
+  "fdeops.insights",
+  "fdeops.impact",
   "fdeops.improve",
   "fdeops.release",
   "fdeops.diagnose",

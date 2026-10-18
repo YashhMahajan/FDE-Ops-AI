@@ -44,6 +44,7 @@ and 1.12). This glossary is the list of those terms for FDE-Ops-AI. The STE chec
 | opportunity | A product problem with its evidence, cost and expected value. |
 | oracle | The code that calculates ground truth from the policy and the world state. |
 | pack | The domain code for one business domain (for example, billing). |
+| partial pooling | A statistical method: a small group uses the data of all groups as its prior. |
 | policy | The business rules of a tenant. |
 | preset | A named provider configuration. |
 | provenance | The source of a number: measured in simulation, estimated, or pipeline test. |

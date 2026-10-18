@@ -232,3 +232,6 @@ ingest
 tracking
 legal action
 diagnosis
+# The dictionary approves ZERO. The parser missed it.
+zero
+partial pooling
