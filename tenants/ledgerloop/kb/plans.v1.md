@@ -7,10 +7,11 @@ effective_from: 2026-01-01
 
 ## Available plans {#available}
 
-Ledgerloop offers four plans: Starter ($29 per month), Growth ($99 per month), Scale ($299 per month)
-and Enterprise ($899 per month).
+Ledgerloop has four plans: Starter ($29 for each month), Growth ($99 for each month), Scale ($299
+for each month) and Enterprise ($899 for each month).
 
 ## Changing plans {#changing-plans}
 
-Owners and Admins can change plans at any time. Upgrades apply immediately. Downgrades apply from
-the start of the next billing cycle, and features above the new plan's limits become read-only.
+Owners and Admins can change the plan at all times. An upgrade starts immediately. A downgrade
+starts at the start of the next billing cycle. After a downgrade, the functions that are above the
+limits of the new plan become read-only.

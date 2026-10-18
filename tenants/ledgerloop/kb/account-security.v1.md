@@ -7,12 +7,12 @@ effective_from: 2026-01-01
 
 ## Two-factor resets and ownership transfers {#2fa-reset}
 
-For your protection, two-factor authentication resets and workspace ownership transfers are handled
-only by the Ledgerloop security team after identity verification. Support agents cannot perform
-them and will hand the request to the security team.
+To keep your account safe, only the Ledgerloop security team can reset two-factor authentication
+or give the ownership of a workspace to a different user. The security team does these tasks after it checks your
+identity. Support agents cannot do these tasks. They send the request to the security team.
 
-## Verifying who is asking {#verify-identity}
+## Identity checks {#verify-identity}
 
-We can only discuss or change account details for requests sent from an email address that belongs
-to a user on that account. If you wrote from a different address, please contact us again from the
-email address registered on your Ledgerloop account.
+We discuss or change account data only when the request comes from the email address of a user on
+that account. If you used a different address, send your request again from the email address of
+your Ledgerloop account.

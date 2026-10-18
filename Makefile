@@ -1,6 +1,8 @@
-.PHONY: check lint types layers test fmt
+.PHONY: check lint types layers docs test fmt
 
-check: lint types layers test
+DOCS = README.md CHANGELOG.md docs tenants src/fdeops/agent/prompts
+
+check: lint types layers docs test
 
 lint:
 	uv run ruff check src tests
@@ -11,6 +13,10 @@ types:
 
 layers:
 	uv run lint-imports
+
+# ASD-STE100 Simplified Technical English for all documents
+docs:
+	uv run fdeops docs check $(DOCS)
 
 test:
 	uv run pytest

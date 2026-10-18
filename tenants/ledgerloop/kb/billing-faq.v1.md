@@ -7,17 +7,17 @@ effective_from: 2026-01-01
 
 ## When invoices are issued {#invoice-timing}
 
-Ledgerloop issues one invoice at the start of each monthly billing period and charges the payment
-method on file automatically. Each invoice shows the billing period it covers and the plan price
-for that period.
+Ledgerloop issues one invoice at the start of each monthly billing period. We charge the payment
+method on the account automatically. Each invoice shows its billing period and the plan price for
+that period.
 
 ## Proration on plan changes {#proration}
 
-Upgrades take effect immediately and the price difference for the rest of the period is charged
-right away. Downgrades take effect at the start of your next billing cycle, and no partial credit
-is issued for the current period.
+An upgrade starts immediately. We charge the price difference for the remaining days of the period
+at that time. A downgrade starts at the start of your next billing cycle. We do not give a credit
+for the current period.
 
 ## Taxes {#taxes}
 
-Prices exclude sales tax and VAT, which are calculated from the billing address. Ledgerloop support
-cannot give tax advice.
+Prices do not include sales tax or VAT. We calculate the tax from the billing address. Ledgerloop
+support cannot give tax advice.

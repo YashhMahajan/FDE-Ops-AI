@@ -241,7 +241,7 @@ class BillingHeuristicLLM:
 
     def _refund(self, v: _View, s: int, account: dict[str, Any]) -> tuple[str, dict[str, Any]]:
         careful = not self._errs(v, s, "ignore_retrieval")
-        windows = [int(d) for d in re.findall(r"within (\d+) days of the payment", v.knowledge)]
+        windows = [int(d) for d in re.findall(r"in the (\d+) days after the payment", v.knowledge)]
         limits = re.findall(r"Refunds above \$([\d,]+\.\d\d)", v.knowledge)
         searches = len(v.results.get("search_kb", []))
         if careful and searches == 0 and not windows:

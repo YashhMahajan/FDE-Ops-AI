@@ -37,7 +37,11 @@ def test_hashing_embedder_deterministic_normalized() -> None:
 def test_hybrid_rrf_merges() -> None:
     r = Retriever(load_kb(KB), RetrievalConfig(mode="hybrid", top_k=3))
     hits = r.search("how do I update my card after a failed payment", TODAY)
-    assert hits[0].section_key.startswith("payment-failures#")
+    bm25_top = Retriever(load_kb(KB), RetrievalConfig(mode="bm25", top_k=1)).search(
+        "how do I update my card after a failed payment", TODAY
+    )[0]
+    assert bm25_top.section_key == "payment-failures#update-card"
+    assert bm25_top.uid in {h.uid for h in hits}  # fusion keeps the strong lexical hit
     assert [h.rank for h in hits] == [1, 2, 3]
     assert len({h.uid for h in hits}) == len(hits)
 

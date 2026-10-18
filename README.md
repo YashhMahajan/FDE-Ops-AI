@@ -1,58 +1,61 @@
 # FDE-Ops-AI
 
-**Deploy AI agents into real business workflows, then prove with evidence whether they are ready to ship.**
+**Deploy AI agents into business workflows. Then, prove with evidence that they can go to production.**
 
-A demo shows an agent answering one question correctly. FDE-Ops-AI answers the questions that come after:
+A demo shows that an agent can answer one question correctly. FDE-Ops-AI answers the questions that come after the demo:
 
-- Does the agent work reliably across many realistic and adversarial cases?
-- Does it follow *this customer's* policies and permissions?
-- When a document changes or an API fails, can we detect it, find the cause, and prove the fix?
-- Is the new release better than the old one, by a margin we can defend statistically?
+- Does the agent do the task correctly in many realistic cases and in adversarial cases?
+- Does the agent obey the policies and permissions of this customer?
+- When a document changes or an API stops, can we find the problem, find the cause and prove the fix?
+- Is the new release better than the current release? Can statistics show that the difference is real?
 
-The first workflow is a customer-support agent for a B2B SaaS company. It looks up accounts, issues refunds, changes plans, and escalates. It runs against a **deterministic simulated customer world** whose ground truth comes from executing the tenant's policy. **No LLM writes the answer key.**
+The first workflow is a customer-support agent for a B2B SaaS company. The agent finds accounts, refunds invoices, changes plans and escalates tickets. It operates in a **deterministic simulated customer world**. The ground truth comes from the policy of the tenant. **An LLM does not write the answers.**
 
-> All companies, people, and data here are **fictional**. Every report states where its numbers come from (`pipeline-test`, `measured-in-simulation`, or `estimated`). Simulated results are never presented as real customer impact.
+> All companies, persons and data in this repository are **fictional**. Each report shows the source of its numbers: `pipeline-test`, `measured-in-simulation` or `estimated`. We do not show simulated results as real customer results.
 
-## What works today (M0–M3)
+## What operates at this time (M0 to M3)
 
-| Area | What it does |
+| Area | Function |
 |---|---|
-| Simulated world | Tenant *Ledgerloop* (fictional billing SaaS). Versioned knowledge base with effective dates. Seeded accounts and invoices. Billing, account and ticketing APIs. |
-| Ground truth | A policy engine is the oracle. 12 scenario templates cover drift-sensitive refunds, clarification, permission, prompt-injection and unknown-requester cases. |
-| Datasets | Content-hashed and versioned, with a dev/test split that is stable by case id. Tampering is detected on load. |
-| Agent | Explicit tool loop. Malformed model output becomes an observation, never a crash. Deterministic customer simulator for clarifying questions. |
-| Integration layer | Timeouts, retries with backoff, circuit breaker, rate limiting, and **idempotency keys**, so a retried refund happens exactly once. Permission guard, hash-chained audit log, fault injection, and a policy monitor (observe or enforce). |
-| Models | One client for the OpenAI-compatible wire format. Free presets: **OpenRouter free models**, vLLM, Ollama. Content-addressed **record/replay cassettes**, so evaluations are reproducible and cost nothing to re-run. |
-| Evaluation | Deterministic evaluators (outcome via world-state diff, tool use, policy, escalation, retrieval recall/MRR/nDCG + stale hits, facts, injection, clarification, perf). LLM judges with calibration (Cohen's κ). |
-| Statistics | Wilson intervals, pass^k reliability, case-level paired bootstrap, exact sign/McNemar tests, Holm correction, rule-of-three bounds, power/MDE. |
+| Simulated world | The tenant *Ledgerloop* is a fictional billing SaaS company. It has a versioned knowledge base with an effective date for each document, accounts, invoices, and billing, account and ticket APIs. |
+| Ground truth | A policy engine is the oracle. Twelve scenario templates make cases for refunds, clarification, permissions, prompt injection and unknown requesters. |
+| Datasets | Each dataset has a version and a content hash. The dev split and the test split do not change when you add cases. The loader finds changes to a dataset file. |
+| Agent | The agent is an explicit tool loop. Incorrect model output goes back to the model as an error message. It does not stop the program. |
+| Integration layer | Timeouts, retries, a circuit breaker, a rate limit and **idempotency keys**. A refund that the connector sends again occurs only one time. There is also a permission guard, an audit log with a hash chain, fault injection and a policy monitor. |
+| Models | One client for the OpenAI-compatible protocol. The presets are free: **OpenRouter free models**, vLLM and Ollama. **Cassettes** record each model call. A replay of a cassette gives the same results and costs nothing. |
+| Evaluation | Deterministic evaluators measure the outcome, tool use, policy, escalation, retrieval, facts, injection, clarification and performance. LLM judges have a calibration with human labels. |
+| Statistics | Wilson intervals, pass^k reliability, paired comparisons at case level, exact sign tests, Holm correction, the rule of three and power calculations. |
 
-## Quick start
+## Start
 
-Requires Python ≥ 3.11 and [uv](https://docs.astral.sh/uv/). No GPU, Docker, or API key is needed for this.
+You must have Python 3.11 (or a subsequent version) and [uv](https://docs.astral.sh/uv/). You do not need a GPU, Docker or an API key for these steps.
 
 ```bash
 uv sync
-make check                                   # lint, types, layering contract, 200+ tests
+make check                                   # lint, types, layers, STE docs, tests
 
 uv run fdeops tenant validate tenants/ledgerloop
 uv run fdeops dataset build --tenant tenants/ledgerloop
 
-# Pipeline test with the rule-based stand-in model: stale index vs. fixed index
+# A pipeline test with the rule-based model: a stale index, then a correct index
 uv run fdeops run --tenant tenants/ledgerloop --agent configs/agents/ledgerloop-heuristic-stale.yaml \
   --dataset data/datasets/ledgerloop/support-core@v1 --split test --trials 2
 uv run fdeops run --tenant tenants/ledgerloop --agent configs/agents/ledgerloop-heuristic.yaml \
   --dataset data/datasets/ledgerloop/support-core@v1 --split test --trials 2
-uv run fdeops compare runs/<stale-run-id> runs/<fixed-run-id>
+uv run fdeops compare runs/<stale-run-id> runs/<correct-run-id>
 ```
 
-Running a real (free) model through OpenRouter, recording every call:
+To use a real model that is free, do these steps:
+
+1. Get a free OpenRouter key. Select a model ID that ends with `:free`.
+2. Run the agent in record mode. The cassette keeps each model response.
+3. Run the agent again in replay mode. You do not need a key for replay.
 
 ```bash
-export OPENROUTER_API_KEY=...                # free account; pick a model id ending in ":free"
+export OPENROUTER_API_KEY=...
 uv run fdeops run --tenant tenants/ledgerloop --agent configs/agents/ledgerloop-v1.yaml \
   --model "<free-model-id>" --dataset data/datasets/ledgerloop/support-core@v1 \
   --llm-mode record --cassettes cassettes/ledgerloop-v1.jsonl
-# Later, anywhere, with no key and no cost:
 uv run fdeops run ... --llm-mode replay --cassettes cassettes/ledgerloop-v1.jsonl
 ```
 
@@ -60,35 +63,43 @@ uv run fdeops run ... --llm-mode replay --cassettes cassettes/ledgerloop-v1.json
 
 ```
 src/fdeops/
-  core/        ids, canonical hashing, clocks, provenance, config errors
+  core/        IDs, canonical hashes, clocks, provenance, configuration errors
   llm/         protocol, OpenAI-compatible client, presets, retries, cassettes
   trace/       spans (OpenTelemetry GenAI attribute names), cost estimates
   retrieval/   versioned knowledge base, BM25, hashing embedder, hybrid retriever
-  world/       entity state + diffing, cases, datasets, scenario framework
+  world/       entity state and diffs, cases, datasets, scenario framework
   connectors/  connector interface, resilience, guard, audit, faults, policy monitor
-  packs/       domain packs (billing): entities, APIs, policy, scenarios, heuristic model
-  tenancy/     tenant config as code
+  packs/       domain packs (billing): entities, APIs, policy, scenarios, rule-based model
+  tenancy/     tenant configuration as code
   agent/       reference support agent, prompts, episode runner
   eval/        evaluators, judges, calibration, runner, reports, comparisons, statistics
-  cli/         `fdeops` command
-tenants/       one directory per (fictional) customer
+  devtools/    the ASD-STE100 checker for documents
+  cli/         the `fdeops` command
+tenants/       one folder for each fictional customer
 configs/       agent configurations (release candidates)
-docs/          design, plans, ADRs, reports
+docs/          design, plans, glossary, decision records, reports
 ```
 
-An import-linter contract enforces the layering in CI. Dependencies point one way only.
+An import-linter contract makes sure that each layer imports only from the layers below it. CI runs this contract.
+
+## Documentation style
+
+All documents use ASD-STE100 Simplified Technical English. The [glossary](docs/glossary.md) gives the technical nouns and technical verbs of this project. Run `uv run fdeops docs check README.md docs` to check a document.
 
 ## Roadmap
 
-See the [system design](docs/design/2026-10-18-fde-ops-ai-design.md). Next up:
-- M4: failure taxonomy, clustering and counterfactual-replay diagnosis.
-- M5: integration hardening and a second tenant (Parcelpoint).
-- M6: release gates and the improvement loop.
-- M7: API, storage and jobs.
-- M8: ROI and product insights.
-- M9: web UI.
-- M10: Docker/CI delivery kit.
-- M11–12: real recorded runs and public demo.
+Refer to the [system design](docs/design/2026-10-18-fde-ops-ai-design.md). These are the subsequent milestones:
+
+| Milestone | Scope |
+|---|---|
+| M4 | Failure classes, clusters and diagnosis with counterfactual replay |
+| M5 | More resilient integrations and a second tenant (Parcelpoint) |
+| M6 | Release gates and the improvement loop |
+| M7 | API, storage and jobs |
+| M8 | ROI and product insights |
+| M9 | Web UI |
+| M10 | Deployment kit: Docker, CI, Kaggle notebook |
+| M11 and M12 | Real recorded runs and a public demo |
 
 ## License
 

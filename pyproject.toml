@@ -82,6 +82,6 @@ layers = [
   "fdeops.packs",
   "fdeops.connectors",
   "fdeops.world",
-  "fdeops.llm | fdeops.trace | fdeops.retrieval",
+  "fdeops.llm | fdeops.trace | fdeops.retrieval | fdeops.devtools",
   "fdeops.core",
 ]
