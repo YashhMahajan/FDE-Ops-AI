@@ -16,11 +16,21 @@ dependencies = [
   "typer>=0.12",
 ]
 
+[project.optional-dependencies]
+# The API service, the job worker and Postgres. The core library does not need them.
+server = [
+  "fastapi>=0.115",
+  "uvicorn>=0.30",
+  "sqlalchemy>=2.0",
+  "psycopg[binary]>=3.2",
+]
+
 [project.scripts]
 fdeops = "fdeops.cli.main:app"
 
 [dependency-groups]
 dev = [
+  "fdeops[server]",
   "pytest>=8.2",
   "pytest-cov>=5.0",
   "hypothesis>=6.100",
@@ -41,6 +51,10 @@ packages = ["src/fdeops"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q --strict-markers"
+filterwarnings = [
+  # Raised inside starlette's own test client; not actionable here.
+  "ignore:Using `httpx` with `starlette.testclient` is deprecated:DeprecationWarning",
+]
 
 [tool.ruff]
 line-length = 100
@@ -76,6 +90,9 @@ name = "Layered architecture"
 type = "layers"
 layers = [
   "fdeops.cli",
+  "fdeops.api",
+  "fdeops.jobs",
+  "fdeops.storage",
   "fdeops.improve",
   "fdeops.release",
   "fdeops.diagnose",

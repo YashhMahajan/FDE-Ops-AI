@@ -10,6 +10,17 @@ All entries use ASD-STE100. Refer to the [glossary](docs/glossary.md).
 - `fdeops docs check` finds the STE rules that a program can find: words that are not approved, sentence length, paragraph length, semicolons and contractions. CI runs it.
 - The glossary gives the technical nouns and technical verbs of the project.
 
+### M7: Storage, API, jobs and authentication
+
+- Database tables for runs, trials, annotations, audit events, API keys and jobs. The same code operates on SQLite (local) and Postgres (CI).
+- An artifact store for run records, reports and diagnosis results. A key cannot go out of the store.
+- A repository with a tenant scope. A request for the data of a different tenant gets "not found", also when the request uses the ID.
+- API keys with four roles: viewer, engineer, approver and admin. The database keeps only the hash of each key.
+- A job queue in the database with leases, retries and a worker. On Postgres, a claim uses `FOR UPDATE SKIP LOCKED`. A test makes sure that four workers at the same time do not get the same job.
+- A FastAPI service: tenants, runs, reports, trials with traces, comparisons, diagnosis results, annotations, judge calibration, the audit log and releases (approve and roll back). Each log line is JSON with a request ID.
+- Commands: `fdeops serve`, `fdeops worker`, `fdeops keys` and `fdeops db init`.
+- CI runs the storage and queue tests on Postgres in a service container.
+
 ### M6: Releases, gates and the improvement loop
 
 - A release is a frozen bundle: the agent configuration, the KB hash, the gate dataset and the gate configuration. Its hash identifies it.

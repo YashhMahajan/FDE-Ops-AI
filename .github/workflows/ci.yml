@@ -31,3 +31,25 @@ jobs:
           python-version: ${{ matrix.python }}
       - run: uv sync --locked
       - run: uv run pytest --cov=fdeops --cov-report=term-missing
+
+  postgres:
+    # The storage, queue and API tests again, on a real Postgres (pgvector image).
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: fdeops
+          POSTGRES_PASSWORD: fdeops
+          POSTGRES_DB: fdeops
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U fdeops" --health-interval 5s --health-timeout 5s
+          --health-retries 10
+    env:
+      FDEOPS_TEST_DATABASE_URL: postgresql+psycopg://fdeops:fdeops@localhost:5432/fdeops
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --locked
+      - run: uv run pytest tests/storage tests/jobs -v

@@ -22,6 +22,7 @@ and 1.12). This glossary is the list of those terms for FDE-Ops-AI. The STE chec
 | connector | The code that connects the agent to an external system. |
 | critical violation | A policy violation that can cause financial or security damage. |
 | dataset | A versioned set of cases. |
+| diagnosis | The analysis that finds the cause of a cluster of failures. |
 | drift | A change in the knowledge base, the data or the model after a release. |
 | embedding | A vector that shows the meaning of a text. |
 | escalation | The hand-off of a ticket to a human specialist. |
