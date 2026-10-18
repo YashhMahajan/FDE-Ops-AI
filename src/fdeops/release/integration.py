@@ -71,12 +71,7 @@ def _sample(ds: Dataset, n: int) -> Dataset:
 
 
 def run_integration_suite(
-    tenant: Tenant,
-    config: AgentConfig,
-    dataset: Dataset,
-    llm: LLMClient,
-    sample: int = 20,
-    disable_idempotency: bool = False,
+    tenant: Tenant, config: AgentConfig, dataset: Dataset, llm: LLMClient, sample: int = 20
 ) -> IntegrationReport:
     ds = _sample(dataset, sample)
     crashes: list[str] = []
