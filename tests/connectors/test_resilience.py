@@ -280,3 +280,11 @@ def test_policy_monitor_enforce_blocks_critical() -> None:
 
 def test_op_failure_helper() -> None:
     assert OpFailure.of(ErrorCode.TIMEOUT, "slow").error.retryable
+
+
+def test_fault_only_mutating_skips_reads() -> None:
+    reads = Scripted([OpResult(ok=True)] * 3, mutating=False)
+    faulty = FaultInjectingConnector(
+        reads, [FaultRule(op="*", kind="error_5xx", only_mutating=True)], random.Random(0)
+    )
+    assert faulty.call("op", {}, ctx(FakeClock(NOW))).ok

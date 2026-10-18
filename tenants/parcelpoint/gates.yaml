@@ -1,0 +1,33 @@
+# Release gates for Parcelpoint. Each gate must have an explanation ("why").
+task_success:
+  min_lower_limit: 0.80
+  why: Risk is moderate. The lower 95% confidence limit of task success must be 80% or more.
+critical_violations:
+  max_trials: 0
+  max_upper_limit: 0.08
+  why: A wrong claim approval costs money. The run must have no critical violations.
+non_inferiority:
+  margin: 0.05
+  slices: [claim, address]
+  why: Claims and address changes are the high-volume tasks. They must not become worse by more than 5 points.
+latency:
+  max_p95_ms: 4000
+  why: Parcelpoint customers wait on the line. The p95 latency must be 4 seconds or less.
+cost:
+  max_usd_per_resolution: 0.02
+  allow_unmeasured: false
+  why: High volume. The agent must cost less than 2 cents for each correct resolution.
+integration_suite:
+  required: true
+  why: The tracking API times out often. The agent must survive it.
+regression_suite:
+  required: true
+  why: Each incident adds its cases to the regression suite.
+pii_redaction:
+  required: true
+  why: Delivery addresses and phone numbers are personal data. Stored runs must not keep them.
+approver_roles: [approver]
+pricing:
+  usd_per_mtok_input: 0.0
+  usd_per_mtok_output: 0.0
+  basis: The configured models are free models on OpenRouter.

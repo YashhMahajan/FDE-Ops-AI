@@ -23,6 +23,8 @@ class FaultRule(FrozenModel):
     kind: FaultKind
     probability: float = 1.0
     times: int | None = None
+    only_mutating: bool = False
+    """Apply the fault only to operations that change data (where a retry can cause harm)."""
 
 
 class FaultInjectingConnector:
@@ -34,6 +36,7 @@ class FaultInjectingConnector:
         self._fired = [0] * len(rules)
         self.injected: list[tuple[str, str]] = []
         self._ops = {s.name for s in inner.ops()}
+        self._mutating = {s.name for s in inner.ops() if s.mutating}
 
     def ops(self) -> list[OpSpec]:
         return self.inner.ops()
@@ -41,6 +44,8 @@ class FaultInjectingConnector:
     def _pick(self, op: str) -> FaultRule | None:
         for i, rule in enumerate(self.rules):
             if rule.op not in ("*", op) or op not in self._ops:
+                continue
+            if rule.only_mutating and op not in self._mutating:
                 continue
             if rule.times is not None and self._fired[i] >= rule.times:
                 continue

@@ -76,6 +76,8 @@ name = "Layered architecture"
 type = "layers"
 layers = [
   "fdeops.cli",
+  "fdeops.improve",
+  "fdeops.release",
   "fdeops.diagnose",
   "fdeops.eval",
   "fdeops.agent",

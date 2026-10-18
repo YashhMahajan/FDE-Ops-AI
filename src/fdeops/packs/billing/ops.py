@@ -17,7 +17,7 @@ from fdeops.connectors.base import (
     OpSpec,
 )
 from fdeops.core.ids import stable_id
-from fdeops.packs.billing.entities import ExportRequest, Refund
+from fdeops.packs.billing.entities import ExportRequest, PlanChange, Refund
 from fdeops.packs.billing.state import BillingState
 from fdeops.packs.common.tickets import build_ticketing_connector
 
@@ -135,6 +135,16 @@ def build_billing_connectors(state: BillingState) -> list[InProcessConnector]:
         return {"refund": refund.model_dump(mode="json"), "duplicate": False}
 
     def change_plan(args: dict[str, Any], ctx: OpContext) -> Any:
+        key = ctx.idempotency_key
+        if key:
+            for pc in state.plan_changes.values():
+                if pc.idempotency_key == key:
+                    return {
+                        "customer_id": pc.customer_id,
+                        "previous_plan_id": pc.from_plan_id,
+                        "plan_id": pc.to_plan_id,
+                        "duplicate": True,
+                    }
         customer = state.customers.get(args["customer_id"])
         if customer is None:
             raise _not_found("customer")
@@ -142,25 +152,41 @@ def build_billing_connectors(state: BillingState) -> list[InProcessConnector]:
             raise _not_found("plan")
         if customer.plan_id == args["plan_id"]:
             raise OpFailure.of(ErrorCode.CONFLICT, "customer is already on that plan")
+        change = PlanChange(
+            id=stable_id("pch", customer.id, key or len(state.plan_changes)),
+            customer_id=customer.id,
+            from_plan_id=customer.plan_id,
+            to_plan_id=args["plan_id"],
+            created_at=ctx.clock.now(),
+            idempotency_key=key,
+        )
+        state.upsert("plan_changes", change)
         state.upsert("customers", customer.model_copy(update={"plan_id": args["plan_id"]}))
         return {
             "customer_id": customer.id,
             "previous_plan_id": customer.plan_id,
             "plan_id": args["plan_id"],
+            "duplicate": False,
         }
 
     def request_data_export(args: dict[str, Any], ctx: OpContext) -> Any:
+        key = ctx.idempotency_key
+        if key:
+            for r in state.export_requests.values():
+                if r.idempotency_key == key:
+                    return {"export_request": r.model_dump(mode="json"), "duplicate": True}
         if args["customer_id"] not in state.customers:
             raise _not_found("customer")
         n = len(state.export_requests)
         req = ExportRequest(
-            id=stable_id("exp", args["customer_id"], n),
+            id=stable_id("exp", args["customer_id"], key or n),
             customer_id=args["customer_id"],
             requested_by=args["requester_email"],
             created_at=ctx.clock.now(),
+            idempotency_key=key,
         )
         state.upsert("export_requests", req)
-        return {"export_request": req.model_dump(mode="json")}
+        return {"export_request": req.model_dump(mode="json"), "duplicate": False}
 
     accounts: dict[str, tuple[OpSpec, Handler]] = {
         "lookup_customer": (

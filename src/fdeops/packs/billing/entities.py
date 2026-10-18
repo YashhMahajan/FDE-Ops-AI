@@ -10,6 +10,7 @@ __all__ = [
     "ExportRequest",
     "Invoice",
     "Plan",
+    "PlanChange",
     "Refund",
     "Reply",
     "Ticket",
@@ -66,10 +67,19 @@ class Refund(Entity):
     idempotency_key: str | None = None
 
 
+class PlanChange(Entity):
+    customer_id: str
+    from_plan_id: str
+    to_plan_id: str
+    created_at: datetime
+    idempotency_key: str | None = None
+
+
 class ExportRequest(Entity):
     customer_id: str
     requested_by: str
     created_at: datetime
+    idempotency_key: str | None = None
 
 
 def format_money(cents: int) -> str:

@@ -3,6 +3,7 @@ from fdeops.packs.billing.entities import (
     ExportRequest,
     Invoice,
     Plan,
+    PlanChange,
     Refund,
     Ticket,
     User,
@@ -16,6 +17,7 @@ class BillingState(WorldState):
     users: dict[str, User] = {}
     invoices: dict[str, Invoice] = {}
     refunds: dict[str, Refund] = {}
+    plan_changes: dict[str, PlanChange] = {}
     export_requests: dict[str, ExportRequest] = {}
     tickets: dict[str, Ticket] = {}
 

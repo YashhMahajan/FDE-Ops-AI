@@ -10,6 +10,22 @@ All entries use ASD-STE100. Refer to the [glossary](docs/glossary.md).
 - `fdeops docs check` finds the STE rules that a program can find: words that are not approved, sentence length, paragraph length, semicolons and contractions. CI runs it.
 - The glossary gives the technical nouns and technical verbs of the project.
 
+### M6: Releases, gates and the improvement loop
+
+- A release is a frozen bundle: the agent configuration, the KB hash, the gate dataset and the gate configuration. Its hash identifies it.
+- Each tenant has `gates.yaml`. Each gate must have an explanation, or the file does not load. Ledgerloop and Parcelpoint have different gates.
+- Gates use confidence limits. These are the gates:
+  - task success, critical violations and non-inferiority for each important slice,
+  - p95 latency and cost for each resolution,
+  - the integration suite, the regression suite, judge calibration and PII redaction.
+- A gate that the platform cannot measure fails, unless the configuration accepts it.
+- The integration suite runs sets of faults on a sample. It checks that no episode stops with an error, that no task occurs two times, and that each audit chain is correct. It found a real defect: data exports did not use idempotency keys. Plan changes also have records and idempotency keys at this time.
+- A release registry on disk: propose, approve, reject, roll back and history. Only a person with an approver role can move production.
+- Shadow mode runs a candidate next to production on the same traffic.
+- The improvement loop selects a fix on the dev split and validates it on the test split. It stops at a decision that waits for approval. The approval adds the incident cases to the regression suite.
+- New commands: `fdeops release`, `fdeops improve` and `fdeops shadow`. Each decision has a memo.
+- *What this shows:* the full loop from incident to approved fix, with evidence at each step and a person at the last step.
+
 ### M5: Integrations and a second tenant
 
 - A second fictional tenant, Parcelpoint (shipping SaaS), on the same platform. It has a new logistics pack with 11 scenarios: shipment tracking, late shipments, address changes, claims, legal risk, identity and injection. The policy, the risk tolerance, the scopes and the PII rules are different from Ledgerloop. Parcelpoint has its own drift: the claim limit changed from $500 to $300.

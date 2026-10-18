@@ -30,6 +30,7 @@ class BillingPack:
         "users": {"customer_id": "customers"},
         "invoices": {"customer_id": "customers"},
         "refunds": {"invoice_id": "invoices"},
+        "plan_changes": {"customer_id": "customers"},
         "export_requests": {"customer_id": "customers"},
     }
     normalizers: dict[str, Any] = {"users": normalize_email}

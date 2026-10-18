@@ -159,3 +159,22 @@ def test_terminal_ops_marked(state: BillingState) -> None:
         "ask_clarifying_question": "clarify",
         "escalate_to_human": "escalate",
     }
+
+
+def test_export_idempotency_key_returns_same_request(state: BillingState) -> None:
+    args = {"customer_id": "cus_t", "requester_email": "owner@testco.example"}
+    a = call(state, "request_data_export", args, key="exp-1")
+    b = call(state, "request_data_export", args, key="exp-1")
+    assert a.ok and b.ok
+    assert a.data["export_request"]["id"] == b.data["export_request"]["id"]
+    assert b.data["duplicate"] is True
+    assert len(state.export_requests) == 1
+
+
+def test_change_plan_retry_with_same_key_succeeds(state: BillingState) -> None:
+    args = {"customer_id": "cus_t", "plan_id": "plan_starter"}
+    assert call(state, "change_plan", args, key="pc-1").ok
+    again = call(state, "change_plan", args, key="pc-1")
+    assert again.ok and again.data["duplicate"] is True
+    other = call(state, "change_plan", args, key="pc-2")
+    assert other.error is not None and other.error.code == ErrorCode.CONFLICT
