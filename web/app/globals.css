@@ -511,10 +511,6 @@ a {
   text-shadow: 0 0 12px color-mix(in srgb, var(--lamp-fail-lit) 60%, transparent);
 }
 
-.lamp[data-state="not_applicable"] .lamp-face {
-  color: #56687d;
-}
-
 .lamp[aria-pressed="true"] {
   border-color: var(--lamp-warn-lit);
 }
