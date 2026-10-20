@@ -19,10 +19,14 @@ export function Annunciator({
   gates,
   selected,
   onSelect,
+  stateText = STATE_TEXT,
+  ariaLabel = "Release gates",
 }: {
   gates: GateResult[];
   selected?: string | null;
   onSelect?: (gate: string) => void;
+  stateText?: Record<GateResult["status"], string>;
+  ariaLabel?: string;
 }) {
   const [lampTest, setLampTest] = useState(true);
   const key = gates.map((g) => `${g.gate}:${g.status}`).join("|");
@@ -32,7 +36,7 @@ export function Annunciator({
     return () => window.clearTimeout(t);
   }, [key]);
   return (
-    <div className="annunciator" data-lamp-test={lampTest} role="list" aria-label="Release gates">
+    <div className="annunciator" data-lamp-test={lampTest} role="list" aria-label={ariaLabel}>
       {gates.map((g) => (
         <button
           key={g.gate}
@@ -45,7 +49,7 @@ export function Annunciator({
           title={g.why}
         >
           <span className="lamp-face">{label(g.gate)}</span>
-          <span className="lamp-state">{STATE_TEXT[g.status]}</span>
+          <span className="lamp-state">{stateText[g.status]}</span>
           <span className="lamp-detail">{g.observed}</span>
         </button>
       ))}

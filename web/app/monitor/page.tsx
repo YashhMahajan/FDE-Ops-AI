@@ -19,6 +19,13 @@ const LAMP: Record<MonitorResult["status"], GateResult["status"]> = {
   "not measured": "not_measured",
 };
 
+const MONITOR_STATE: Record<GateResult["status"], string> = {
+  pass: "ok",
+  fail: "alert",
+  not_measured: "no data",
+  not_applicable: "n / a",
+};
+
 const id = (r: MonitorResult) => (r.direction === "down" ? `${r.signal}_down` : r.signal);
 
 function value(r: MonitorResult, x: number): string {
@@ -141,7 +148,7 @@ export default function MonitorPage() {
     <>
       <PageHead
         title="Production monitor"
-        lede="Production traffic has no oracle. The monitor uses only signals that a live deployment can see: guardrail flags, superseded knowledge in the context, escalations, tool errors, latency and tokens. An alert occurs only when all of the 95% interval of the change is past the tolerance."
+        lede="Production traffic has no oracle. The monitor uses only signals that a live deployment can see: guardrail flags, superseded knowledge in the context, escalations, tool errors, latency and tokens. An alert occurs only when all of the 95% interval of the change is more than the tolerance."
       />
       <Load value={data}>
         {(d) => {
@@ -157,7 +164,7 @@ export default function MonitorPage() {
                   reference {rep.reference_run} · current {rep.current_run}
                 </span>
               </div>
-              <Annunciator gates={lamps(rep)} selected={selected} onSelect={(g) => setSelected((s) => (s === g ? null : g))} />
+              <Annunciator gates={lamps(rep)} stateText={MONITOR_STATE} ariaLabel="Production monitors" selected={selected} onSelect={(g) => setSelected((s) => (s === g ? null : g))} />
               {sel && (
                 <div className="panel">
                   <div className="panel-body">
