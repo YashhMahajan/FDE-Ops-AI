@@ -137,4 +137,17 @@ def export_demo(res: DemoResult, out: Path) -> Path:
             "comparisons": list(res.comparisons),
         },
     )
+    _update_manifest(
+        out.parent, {"id": t.id, "display_name": t.config.display_name, "pack": t.pack.id}
+    )
     return out
+
+
+def _update_manifest(root: Path, entry: dict[str, str]) -> None:
+    """The list of exported tenants, for the tenant switch of the UI."""
+    path = root / "manifest.json"
+    data = json.loads(path.read_text()) if path.exists() else {"tenants": []}
+    data["tenants"] = sorted(
+        [t for t in data["tenants"] if t["id"] != entry["id"]] + [entry], key=lambda t: t["id"]
+    )
+    path.write_text(json.dumps(data, indent=2), encoding="utf-8")

@@ -26,3 +26,4 @@ build/
 /web/out/
 /web/public/demo/
 /web/next-env.d.ts
+/web/tsconfig.tsbuildinfo

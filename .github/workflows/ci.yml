@@ -53,3 +53,47 @@ jobs:
       - uses: astral-sh/setup-uv@v6
       - run: uv sync --locked
       - run: uv run pytest tests/storage tests/jobs -v
+
+  web:
+    # Build the demo data, the static web UI, and screenshots of each page (a visual check).
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --locked
+      - name: Flagship demo data for both tenants
+        run: |
+          uv run fdeops demo --tenant tenants/ledgerloop --out demo-output --export web/public/demo
+          uv run fdeops demo --tenant tenants/parcelpoint --out demo-output --export web/public/demo
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+        working-directory: web
+      - run: pnpm typecheck
+        working-directory: web
+      - run: pnpm build
+        working-directory: web
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"
+      - name: Screenshots of each page
+        working-directory: web
+        run: |
+          pnpm exec playwright install --with-deps chromium
+          (cd out && python3 -m http.server 4173 --bind 127.0.0.1 >/dev/null 2>&1 &)
+          sleep 2
+          pnpm screenshots http://127.0.0.1:4173 screenshots
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: web-screenshots
+          path: web/screenshots
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-static-site
+          path: web/out

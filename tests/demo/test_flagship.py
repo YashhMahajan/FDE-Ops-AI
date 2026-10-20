@@ -35,7 +35,7 @@ def test_flagship_demo_end_to_end(tmp_path: Path) -> None:
     rules = load_rules()
     for name, text in res.reports.items():
         assert check_text(text, rules, name) == [], name
-    out = export_demo(res, tmp_path / "web")
+    out = export_demo(res, tmp_path / "web" / "ledgerloop")
     index = json.loads((out / "index.json").read_text())
     assert (
         index["provenance"] == ["measured-in-simulation", "pipeline-test"]
@@ -46,3 +46,7 @@ def test_flagship_demo_end_to_end(tmp_path: Path) -> None:
     run_id = index["detail_runs"][0]
     assert any((out / "trials" / run_id).iterdir())
     assert (out / "releases.json").exists() and (out / "impact.json").exists()
+    manifest = json.loads((tmp_path / "web" / "manifest.json").read_text())
+    assert manifest["tenants"] == [
+        {"id": "ledgerloop", "display_name": "Ledgerloop (fictional)", "pack": "billing"}
+    ]
