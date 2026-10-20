@@ -11,7 +11,7 @@ RUN uv sync --locked --no-dev \
  && uv run fdeops demo --tenant tenants/ledgerloop --out /tmp/demo --export /demo \
  && uv run fdeops demo --tenant tenants/parcelpoint --out /tmp/demo --export /demo
 
-FROM node:22-slim AS site
+FROM node:26-slim AS site
 RUN corepack enable && corepack prepare pnpm@11 --activate
 WORKDIR /web
 COPY web/package.json web/pnpm-lock.yaml web/pnpm-workspace.yaml ./
