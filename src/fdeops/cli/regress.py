@@ -27,6 +27,13 @@ class RegressionCheck(FrozenModel):
     dataset: str = "support-core"
     split: str = "dev"
     cassettes: str
+    provider: str | None = None
+    """Overrides the provider of the agent configuration."""
+    model: str | None = None
+    """Overrides the model name. The cassette keys include it, thus replay needs the same name."""
+    base_url: str | None = None
+    limit: int | None = None
+    """Use only the first N cases, for a small recording within a free daily limit."""
     min_success_lower: float
     max_critical_trials: int = 0
 
@@ -48,13 +55,22 @@ def regress(
         for c in checks:
             t = load_tenant((root / c.tenant).resolve())
             config = load_agent_config((root / c.agent).resolve())
+            overrides = {k: v for k, v in {"provider": c.provider, "name": c.model}.items() if v}
+            if overrides:
+                config = config.model_copy(
+                    update={"model": config.model.model_copy(update=overrides)}
+                )
             ds = t.build_datasets(c.dataset)[c.split]
+            if c.limit:
+                ds = ds.model_copy(update={"cases": ds.cases[: c.limit]})
             mode = LLMMode.REPLAY_OR_RECORD if record else LLMMode.REPLAY
             cassette = (root / c.cassettes).resolve()
             if skip_missing and not record and not cassette.exists():
                 typer.echo(f"skip  {c.name}: no cassette at {c.cassettes}. Record it first.")
                 continue
-            llm = build_llm(t, config.model.provider, config.model.name, mode, cassette, None, {})
+            llm = build_llm(
+                t, config.model.provider, config.model.name, mode, cassette, c.base_url, {}
+            )
             s = summarize(run_eval(t, config, ds, llm, llm_mode=mode.value))
             ok = (
                 s.overall.ci_lo >= c.min_success_lower

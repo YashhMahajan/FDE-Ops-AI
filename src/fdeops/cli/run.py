@@ -29,6 +29,9 @@ def run(
     base_url: str | None = typer.Option(None, help="Override the provider base URL"),
     heuristic_errors: str = typer.Option("", help="e.g. wrong_amount=0.2,miss_escalation=0.1"),
     workers: int = typer.Option(4, min=1),
+    limit: int | None = typer.Option(
+        None, min=1, help="Use only the first N cases (for a small free-tier recording)"
+    ),
     incident: Path | None = typer.Option(None, help="An incident file (incidents/<tenant>/*.yaml)"),
     external: str | None = typer.Option(
         None, help="An external Python agent: path/to/file.py:function"
@@ -43,6 +46,8 @@ def run(
         if overrides:
             config = config.model_copy(update={"model": config.model.model_copy(update=overrides)})
         ds = load_dataset(dataset, split)  # type: ignore[arg-type]
+        if limit:
+            ds = ds.model_copy(update={"cases": ds.cases[:limit]})
         settings = {"error_rates": parse_rates(heuristic_errors)} if heuristic_errors else {}
         agent_fn = load_external_agent(external) if external else None
         llm = None

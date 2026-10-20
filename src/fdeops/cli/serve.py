@@ -1,6 +1,7 @@
 """Commands to operate the service. They do not run in tests or on a laptop by default."""
 
 import os
+import socket
 
 import typer
 
@@ -67,7 +68,10 @@ def serve(host: str = typer.Option("0.0.0.0"), port: int = typer.Option(8000)) -
     uvicorn.run(create_app(), host=host, port=port)
 
 
-def worker(name: str = typer.Option("worker-1"), idle: float = typer.Option(2.0)) -> None:
+def worker(
+    name: str | None = typer.Option(None, help="Worker name in job leases (default: host name)"),
+    idle: float = typer.Option(2.0),
+) -> None:
     """Start a job worker. Run more than one for more throughput."""
     from fdeops.api.app import Settings
     from fdeops.jobs.handlers import Context, handlers
@@ -75,6 +79,7 @@ def worker(name: str = typer.Option("worker-1"), idle: float = typer.Option(2.0)
     from fdeops.jobs.worker import Worker
     from fdeops.storage.artifacts import LocalArtifactStore
 
+    name = name or socket.gethostname()
     settings = Settings.from_env()
     db = Database(settings.database_url)
     db.init()

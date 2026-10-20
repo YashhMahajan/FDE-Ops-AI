@@ -1,0 +1,57 @@
+name: pages
+
+# Publishes the static web UI with the demo data to GitHub Pages.
+# It runs only when a person starts it (Actions > pages > Run workflow). It never runs on a push.
+# Pages for a private repository needs a paid GitHub plan, and the site is public.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --locked
+      - name: Demo data for both tenants
+        run: |
+          uv run fdeops demo --tenant tenants/ledgerloop --out demo-output --export web/public/demo
+          uv run fdeops demo --tenant tenants/parcelpoint --out demo-output --export web/public/demo
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+      - name: Build the static site
+        working-directory: web
+        env:
+          NEXT_PUBLIC_BASE_PATH: /${{ github.event.repository.name }}
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build
+          touch out/.nojekyll
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: web/out
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

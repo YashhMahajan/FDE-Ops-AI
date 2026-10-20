@@ -28,8 +28,10 @@ services:
 
   worker:
     build: {context: ., dockerfile: docker/app.Dockerfile}
-    command: ["fdeops", "worker", "--name", "worker"]
+    command: ["fdeops", "worker"]
     environment: *app-env
+    # The image health check calls the HTTP API. A worker has no HTTP port.
+    healthcheck: {disable: true}
     volumes: [data:/data]
     deploy: {replicas: 2}
     depends_on:

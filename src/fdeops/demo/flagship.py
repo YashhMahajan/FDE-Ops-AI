@@ -3,7 +3,7 @@
 1. Release v1 (the clean configuration) after its gates pass.
 2. Incident: the refund policy changes, and the index keeps the previous section. The production
    monitor gives alerts from signals that a live deployment can see (no oracle).
-3. An evaluation of v1 under the incident measures the regression (a paired comparison).
+3. An evaluation of v1 during the incident measures the regression (a paired comparison).
 4. Diagnosis on the dev split confirms stale knowledge by intervention.
 5. The improvement loop proposes v2 and stops. A person with the approver role approves v2. The
    monitor shows that the alerts stop.
@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import Any
 
 from fdeops.agent.config import AgentConfig, ModelRef
+from fdeops.core.errors import FdeOpsError
 from fdeops.core.model import FrozenModel
 from fdeops.diagnose.interventions import Diagnosis, diagnose_run
 from fdeops.diagnose.report import save_diagnosis
@@ -160,7 +161,7 @@ def run_flagship(
         DemoStep(
             key="regression",
             title="Regression measured",
-            text=f"An evaluation of v1 under the incident: success changed by "
+            text=f"An evaluation of v1 during the incident: success changed by "
             f"{cmp.diff.mean:+.3f} (95% CI {cmp.diff.lo:+.3f} to {cmp.diff.hi:+.3f}). The "
             f"largest change is in {worst[0]} ({worst[1].mean:+.3f}).",
             refs={"baseline_run": v1_test.run_id, "monitor_run": mon_test.run_id},
@@ -271,9 +272,12 @@ def run_flagship(
     return res
 
 
-def load_flagship_incident(root: Path, tenant_id: str) -> IncidentSpec:
-    names = {"ledgerloop": "refund-window-drift", "parcelpoint": "claims-limit-drift"}
-    return load_incident(root / "incidents" / tenant_id / f"{names[tenant_id]}.yaml")
+def load_flagship_incident(root: Path, tenant: Tenant) -> IncidentSpec:
+    """The incident that ``demo_incident`` in tenant.yaml names. No code is for one tenant only."""
+    name = tenant.config.demo_incident
+    if not name:
+        raise FdeOpsError(f"tenant {tenant.id} has no demo_incident in tenant.yaml")
+    return load_incident(root / "incidents" / tenant.id / f"{name}.yaml")
 
 
 def summary(res: DemoResult) -> dict[str, Any]:

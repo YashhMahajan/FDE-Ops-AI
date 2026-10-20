@@ -1,7 +1,7 @@
 id: billing-api-v2-schema
 tenant: ledgerloop
 kind: tool_schema_change
-description: The billing API v2 renames amount_cents. The connector still sends the old field.
+description: The billing API v2 renames amount_cents. The connector continues to send the previous field name.
 params:
   op: issue_refund
   field: amount_cents

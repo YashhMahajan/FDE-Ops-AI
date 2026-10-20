@@ -1,0 +1,51 @@
+# Render blueprint (https://render.com/docs/blueprint-spec). Nothing deploys until a person
+# connects the repository in the Render dashboard and accepts the plan. The plans below are the
+# free plans. A free web service sleeps when it has no traffic.
+databases:
+  - name: fdeops-db
+    plan: free
+    databaseName: fdeops
+    user: fdeops
+
+services:
+  - type: web
+    name: fdeops-api
+    runtime: docker
+    plan: free
+    dockerfilePath: docker/app.Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: "8000"
+      - key: FDEOPS_DATABASE_URL
+        fromDatabase:
+          name: fdeops-db
+          property: connectionString
+      - key: FDEOPS_CORS_ORIGINS
+        sync: false
+
+  # A background worker needs a paid plan on Render. Without it, run `fdeops worker` on a
+  # different host with the same database URL, or the queued jobs wait. Uncomment to use it.
+  # - type: worker
+  #   name: fdeops-worker
+  #   runtime: docker
+  #   plan: starter
+  #   dockerfilePath: docker/app.Dockerfile
+  #   dockerContext: .
+  #   dockerCommand: fdeops worker --name render-worker
+  #   envVars:
+  #     - key: FDEOPS_DATABASE_URL
+  #       fromDatabase:
+  #         name: fdeops-db
+  #         property: connectionString
+
+  - type: web
+    name: fdeops-web
+    runtime: static
+    buildCommand: >-
+      pip install uv && uv sync --locked &&
+      uv run fdeops demo --tenant tenants/ledgerloop --out demo-output --export web/public/demo &&
+      uv run fdeops demo --tenant tenants/parcelpoint --out demo-output --export web/public/demo &&
+      cd web && corepack enable && pnpm install --frozen-lockfile && pnpm build
+    staticPublishPath: web/out

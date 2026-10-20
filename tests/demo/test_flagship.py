@@ -17,7 +17,7 @@ def test_flagship_demo_end_to_end(tmp_path: Path) -> None:
         tenant,
         config,
         tenant.pack.heuristic_model(0, {}),
-        load_flagship_incident(ROOT, "ledgerloop"),
+        load_flagship_incident(ROOT, tenant),
         tmp_path / "demo",
     )
     keys = [s.key for s in res.steps]

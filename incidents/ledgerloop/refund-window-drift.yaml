@@ -3,7 +3,7 @@
 id: refund-window-drift
 tenant: ledgerloop
 kind: doc_drift
-description: The refund-policy change is published, but the old section stays in the index.
+description: The refund-policy change is published, but the previous section stays in the index.
 params:
   retrieval:
     include_superseded: true

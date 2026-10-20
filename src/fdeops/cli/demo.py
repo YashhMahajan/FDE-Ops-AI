@@ -20,17 +20,23 @@ def demo(
     export: Path | None = typer.Option(None, help="Write JSON for the web UI to this folder"),
     llm_mode: LLMMode = typer.Option(LLMMode.LIVE, "--llm-mode"),
     cassettes: Path | None = typer.Option(None),
+    provider: str | None = typer.Option(None, help="Override the provider (for a real model)"),
+    model: str | None = typer.Option(None, help="Override the model name"),
+    base_url: str | None = typer.Option(None, help="Override the provider URL"),
 ) -> None:
     """Run the flagship demo: incident, diagnosis, gated fix, approval, ROI and roadmap."""
     try:
         t = load_tenant(tenant)
         root = tenant.resolve().parent.parent
         cfg_path = agent or root / "configs" / "agents" / f"{t.id}-heuristic.yaml"
-        if not cfg_path.exists():
-            cfg_path = root / "configs" / "agents" / "ledgerloop-heuristic.yaml"
         config = load_agent_config(cfg_path)
-        spec = load_incident(incident) if incident else load_flagship_incident(root, t.id)
-        llm = build_llm(t, config.model.provider, config.model.name, llm_mode, cassettes, None, {})
+        overrides = {k: v for k, v in {"provider": provider, "name": model}.items() if v}
+        if overrides:
+            config = config.model_copy(update={"model": config.model.model_copy(update=overrides)})
+        spec = load_incident(incident) if incident else load_flagship_incident(root, t)
+        llm = build_llm(
+            t, config.model.provider, config.model.name, llm_mode, cassettes, base_url, {}
+        )
         res = run_flagship(t, config, llm, spec, out / t.id)
         if export is not None:
             export_demo(res, export / t.id)

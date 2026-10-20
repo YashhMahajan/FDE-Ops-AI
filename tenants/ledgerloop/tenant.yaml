@@ -45,6 +45,7 @@ agent_scopes:
   - tickets:write
   - tickets:escalate
   - kb:read
+demo_incident: refund-window-drift
 notes: >
   Low risk tolerance: money moves. Refund window shortened from 30 to 14 days on 2026-09-01
   (refund-policy v2), which is the drift the flagship incident exercises.

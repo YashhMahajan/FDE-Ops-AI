@@ -8,6 +8,7 @@ from fdeops.cli import (
     docs,
     impact,
     monitor,
+    portfolio,
     regress,
     release,
     run,
@@ -39,6 +40,7 @@ app.command("opportunities")(impact.opportunities)
 app.command("demo")(demo.demo)
 app.command("regress")(regress.regress)
 app.command("monitor")(monitor.monitor)
+app.command("portfolio")(portfolio.portfolio)
 
 
 @app.command()

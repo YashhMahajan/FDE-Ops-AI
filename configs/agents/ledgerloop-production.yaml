@@ -1,0 +1,18 @@
+# The production configuration for Ledgerloop with a real (free) model. The index has only current sections.
+# provider: openrouter | vllm | ollama | custom. Choose a free OpenRouter model id (ids ending in
+# ":free") and pass it with --model, or set it here.
+id: ledgerloop-production
+model:
+  provider: openrouter
+  name: CHOOSE-A-FREE-MODEL:free
+  temperature: 0.0
+  max_tokens: 800
+prompt_version: support_v1
+retrieval:
+  mode: hybrid
+  top_k: 4
+  include_superseded: false
+  freshness_filter: false
+max_steps: 8
+max_turns: 3
+policy_guardrail: observe

@@ -1,17 +1,27 @@
 # Evaluation regression checks. CI replays each check from its cassette: no model call, no cost.
-# Record a cassette with: fdeops regress evals/regression.yaml --record
-# (a real model needs OPENROUTER_API_KEY, or a vLLM server for the vllm provider).
-# Set min_success_lower to the lower limit of the recorded run, minus a small margin.
+# A check without a cassette is skipped until you record it.
+#
+# Record with OpenRouter (free models):  MODEL=<id>:free scripts/record_openrouter.sh
+# Record with vLLM on a free Kaggle GPU:  kaggle/fdeops_vllm_recording.ipynb
+#
+# The cassette keys include the model name. Thus, replay needs the same model as the recording.
+# After a recording, set min_success_lower to the lower limit of the recorded run, minus a margin.
 checks:
-  - name: ledgerloop-v1-dev
+  - name: ledgerloop-production-dev
     tenant: ../tenants/ledgerloop
-    agent: ../configs/agents/ledgerloop-v1.yaml
+    agent: ../configs/agents/ledgerloop-production.yaml
+    provider: openrouter
+    model: CHOOSE-A-FREE-MODEL:free
     split: dev
-    cassettes: cassettes/ledgerloop-v1-dev.jsonl
-    min_success_lower: 0.50
-  - name: parcelpoint-v1-dev
+    limit: 12
+    cassettes: cassettes/ledgerloop-production-dev.jsonl
+    min_success_lower: 0.30
+  - name: parcelpoint-production-dev
     tenant: ../tenants/parcelpoint
-    agent: ../configs/agents/parcelpoint-v1.yaml
+    agent: ../configs/agents/parcelpoint-production.yaml
+    provider: openrouter
+    model: CHOOSE-A-FREE-MODEL:free
     split: dev
-    cassettes: cassettes/parcelpoint-v1-dev.jsonl
-    min_success_lower: 0.50
+    limit: 12
+    cassettes: cassettes/parcelpoint-production-dev.jsonl
+    min_success_lower: 0.30

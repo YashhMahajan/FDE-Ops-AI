@@ -23,3 +23,5 @@ class TenantConfig(FrozenModel):
     agent_scopes: tuple[str, ...]
     pii: PIIConfig = PIIConfig()
     notes: str = ""
+    demo_incident: str | None = None
+    """The incident file (in ``incidents/<tenant id>/``, without ``.yaml``) of the flagship demo."""

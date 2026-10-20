@@ -86,3 +86,32 @@ def test_run_provider_override(tmp_path: Path) -> None:
     )
     assert res.exit_code == 0, res.output
     assert "pipeline-test" in res.output
+
+
+def test_regress_limit_and_model_override(tmp_path: Path) -> None:
+    cassette = tmp_path / "small.jsonl"
+    m = tmp_path / "regression.yaml"
+    m.write_text(
+        yaml.safe_dump(
+            {
+                "checks": [
+                    {
+                        "name": "small",
+                        "tenant": str(ROOT / "tenants/ledgerloop"),
+                        "agent": str(ROOT / "configs/agents/ledgerloop-v1.yaml"),
+                        "provider": "heuristic",
+                        "model": "rules",
+                        "limit": 5,
+                        "cassettes": str(cassette),
+                        "min_success_lower": 0.0,
+                    }
+                ]
+            }
+        )
+    )
+    r = CliRunner()
+    rec = r.invoke(app, ["regress", str(m), "--record"])
+    assert rec.exit_code == 0, rec.output
+    assert '"model": "rules"' in cassette.read_text() or "rules" in cassette.read_text()
+    replay = r.invoke(app, ["regress", str(m)])
+    assert replay.exit_code == 0 and "pass" in replay.output

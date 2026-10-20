@@ -106,8 +106,17 @@ class JobRow(Base):
     finished_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
 
+def normalize_url(url: str) -> str:
+    """Hosts such as Render and Heroku give ``postgres://`` URLs. SQLAlchemy needs a driver name."""
+    for prefix in ("postgres://", "postgresql://"):
+        if url.startswith(prefix):
+            return "postgresql+psycopg://" + url[len(prefix) :]
+    return url
+
+
 class Database:
     def __init__(self, url: str) -> None:
+        url = normalize_url(url)
         self.url = url
         self.is_sqlite = url.startswith("sqlite")
         kwargs: dict[str, Any] = {"future": True}
