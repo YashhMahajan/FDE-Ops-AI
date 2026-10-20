@@ -24,7 +24,7 @@ def render_memo(d: ReleaseDecision) -> str:
         "",
         "## Gates",
         "",
-        "| gate | result | observed | threshold | explanation |",
+        "| gate | result | measured | threshold | explanation |",
         "|---|---|---|---|---|",
         *[f"| `{g.gate}` | {g.status} | {g.observed} | {g.threshold} | {g.why} |" for g in d.gates],
         "",

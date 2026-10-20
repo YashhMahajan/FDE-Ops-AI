@@ -1,0 +1,9 @@
+# Pipeline-test configuration for Parcelpoint: the rule-based stand-in model.
+id: parcelpoint-heuristic
+model:
+  provider: heuristic
+  name: heuristic-logistics-1
+retrieval:
+  mode: hybrid
+  top_k: 4
+  include_superseded: false

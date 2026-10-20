@@ -16,3 +16,13 @@ build/
 /runs/
 /data/
 .env
+/demo-output/
+/releases/
+/artifacts/
+*.db
+# web: dependencies, build output, generated demo data (CI regenerates it)
+/web/node_modules/
+/web/.next/
+/web/out/
+/web/public/demo/
+/web/next-env.d.ts

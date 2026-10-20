@@ -91,6 +91,7 @@ type = "layers"
 layers = [
   "fdeops.cli",
   "fdeops.api",
+  "fdeops.demo",
   "fdeops.jobs",
   "fdeops.storage",
   "fdeops.insights",

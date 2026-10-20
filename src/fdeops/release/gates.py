@@ -64,7 +64,7 @@ def evaluate_gates(
                 "task_success",
                 "pass" if ok else "fail",
                 f"lower limit {s.overall.ci_lo:.1%} (rate {s.overall.rate:.1%})",
-                f"lower limit at least {g.min_lower_limit:.0%}",
+                f"lower limit {g.min_lower_limit:.0%} or more",
                 g.why,
             )
         )
@@ -108,7 +108,7 @@ def evaluate_gates(
                     "non_inferiority",
                     "fail" if worse else "pass",
                     observed,
-                    f"lower limit at least -{n.margin:.2f} on {list(n.slices)}",
+                    f"lower limit -{n.margin:.2f} or more on {list(n.slices)}",
                     n.why,
                 )
             )
@@ -165,7 +165,7 @@ def evaluate_gates(
                     "judge_calibration",
                     "not_applicable",
                     "no judge in the run",
-                    f"kappa at least {k.min_kappa}",
+                    f"kappa {k.min_kappa} or more",
                     k.why,
                 )
             )
@@ -180,7 +180,7 @@ def evaluate_gates(
                     "judge_calibration",
                     status,
                     f"kappa {judge_kappa}",
-                    f"kappa at least {k.min_kappa}",
+                    f"kappa {k.min_kappa} or more",
                     k.why,
                 )
             )
