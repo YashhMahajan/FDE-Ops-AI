@@ -30,6 +30,25 @@ def wilson_interval(successes: int, n: int, confidence: float = 0.95) -> tuple[f
     return (max(0.0, center - margin), min(1.0, center + margin))
 
 
+def newcombe_diff(
+    x1: int, n1: int, x2: int, n2: int, confidence: float = 0.95
+) -> tuple[float, float, float]:
+    """Difference p1 - p2 of two independent rates, with the Newcombe hybrid score interval.
+
+    The interval uses the Wilson interval of each rate. Thus, it behaves well near 0% and 100%,
+    where monitors of rare events operate. Use it for two independent samples, for example two
+    windows of production traffic. For paired data, use ``paired_bootstrap_diff``.
+    """
+    p1 = x1 / n1 if n1 else 0.0
+    p2 = x2 / n2 if n2 else 0.0
+    l1, u1 = wilson_interval(x1, n1, confidence)
+    l2, u2 = wilson_interval(x2, n2, confidence)
+    d = p1 - p2
+    lo = d - math.sqrt((p1 - l1) ** 2 + (u2 - p2) ** 2)
+    hi = d + math.sqrt((u1 - p1) ** 2 + (p2 - l2) ** 2)
+    return d, lo, hi
+
+
 class DiffEstimate(FrozenModel):
     mean: float
     lo: float

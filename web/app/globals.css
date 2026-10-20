@@ -122,6 +122,14 @@ a {
   display: grid;
   grid-template-columns: var(--rail) 1fr;
   min-height: 100vh;
+  /* The rail colour continues below the sticky rail on long pages. */
+  background: linear-gradient(
+    to right,
+    var(--sheet) calc(var(--rail) - 1px),
+    var(--rule) calc(var(--rail) - 1px),
+    var(--rule) var(--rail),
+    transparent var(--rail)
+  );
 }
 
 .rail {
@@ -539,6 +547,9 @@ a {
 .table .num {
   text-align: right;
   font-variant-numeric: tabular-nums;
+}
+
+.table td.num {
   font-family: var(--font-mono);
   font-size: 13px;
 }
@@ -1059,6 +1070,7 @@ a {
 @media (max-width: 900px) {
   .shell {
     grid-template-columns: 1fr;
+    background: none;
   }
   .rail {
     position: static;
@@ -1098,5 +1110,96 @@ a {
   }
   .waterfall-row {
     grid-template-columns: 120px 1fr 56px;
+  }
+}
+
+/* ---------------------------------------------------------------- monitor */
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+details.panel > summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+details.panel > summary::-webkit-details-marker {
+  display: none;
+}
+
+details.panel > summary::before {
+  content: "+";
+  font-family: var(--font-mono);
+  margin-right: 8px;
+  transition: transform 160ms var(--ease-out, ease-out);
+  display: inline-block;
+}
+
+details.panel[open] > summary::before {
+  transform: rotate(45deg);
+}
+
+.alert-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.alert-entry {
+  padding: 14px 18px;
+  border-bottom: 1px dashed var(--rule-strong);
+}
+
+.alert-entry:last-child {
+  border-bottom: 0;
+}
+
+.alert-signal {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 17px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.chart.strip {
+  max-height: 52px;
+}
+
+.chart.strip .alarm {
+  stroke: var(--ink);
+  stroke-width: 1.5;
+  stroke-dasharray: 3 2;
+}
+
+.chart.tol {
+  width: 220px;
+  max-width: 100%;
+  height: 22px;
+}
+
+.chart.tol .tol-zone {
+  fill: color-mix(in srgb, var(--lamp-fail) 10%, transparent);
+}
+
+.chart.tol .tol-line {
+  stroke: var(--lamp-warn);
+  stroke-width: 1.5;
+  stroke-dasharray: 2 2;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .chart.strip .tick {
+    transform-box: fill-box;
+    transform-origin: bottom;
+    animation: tick-in 260ms cubic-bezier(0.23, 1, 0.32, 1) both;
+  }
+  @keyframes tick-in {
+    from {
+      transform: scaleY(0.2);
+      opacity: 0;
+    }
   }
 }

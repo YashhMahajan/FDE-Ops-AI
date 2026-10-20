@@ -1,0 +1,17 @@
+# Evaluation regression checks. CI replays each check from its cassette: no model call, no cost.
+# Record a cassette with: fdeops regress evals/regression.yaml --record
+# (a real model needs OPENROUTER_API_KEY, or a vLLM server for the vllm provider).
+# Set min_success_lower to the lower limit of the recorded run, minus a small margin.
+checks:
+  - name: ledgerloop-v1-dev
+    tenant: ../tenants/ledgerloop
+    agent: ../configs/agents/ledgerloop-v1.yaml
+    split: dev
+    cassettes: cassettes/ledgerloop-v1-dev.jsonl
+    min_success_lower: 0.50
+  - name: parcelpoint-v1-dev
+    tenant: ../tenants/parcelpoint
+    agent: ../configs/agents/parcelpoint-v1.yaml
+    split: dev
+    cassettes: cassettes/parcelpoint-v1-dev.jsonl
+    min_success_lower: 0.50

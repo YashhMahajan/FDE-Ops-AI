@@ -18,10 +18,13 @@ export function ForestPlot({
   const left = 230;
   const right = 120;
   const rowH = 30;
-  const lim = Math.max(0.25, ...rows.flatMap(([, d]) => [Math.abs(d.lo), Math.abs(d.hi)])) * 1.1;
+  const raw = Math.max(0.25, ...rows.flatMap(([, d]) => [Math.abs(d.lo), Math.abs(d.hi)])) * 1.1;
+  const lim = Math.ceil(raw * 10) / 10;
+  const tickStep = lim <= 0.4 ? 0.1 : lim <= 1 ? 0.2 : 0.5;
   const x = (v: number) => left + ((v + lim) / (2 * lim)) * (width - left - right);
   const height = rows.length * rowH + 40;
-  const ticks = [-lim, -lim / 2, 0, lim / 2, lim].map((t) => Math.round(t * 100) / 100);
+  const n = Math.floor(lim / tickStep + 1e-9);
+  const ticks = Array.from({ length: 2 * n + 1 }, (_, i) => Math.round((i - n) * tickStep * 100) / 100);
   return (
     <svg className="chart" viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Paired differences with 95% intervals">
       {ticks.map((t) => (
@@ -122,6 +125,51 @@ export function PercentileBands({ rows, format = money }: { rows: [string, Distr
           </g>
         );
       })}
+    </svg>
+  );
+}
+
+/**
+ * The current window as a strip of tickets, in traffic order. A lit tick is a ticket with the flag.
+ * The marker is the ticket where the sequential detector (CUSUM) gave its alarm.
+ */
+export function TicketStrip({ flags, alarmAt, tone }: { flags: boolean[]; alarmAt: number | null; tone: string }) {
+  const width = 760;
+  const height = 46;
+  const step = (width - 8) / Math.max(1, flags.length);
+  const w = Math.max(1.5, Math.min(8, step - 1.5));
+  return (
+    <svg className="chart strip" viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`${flags.filter(Boolean).length} of ${flags.length} tickets flagged${alarmAt ? `, alarm at ticket ${alarmAt}` : ""}`}>
+      <line className="grid" x1={4} x2={width - 4} y1={30} y2={30} />
+      {flags.map((f, i) => (
+        <rect key={i} className="tick" x={4 + i * step} y={f ? 12 : 26} width={w} height={f ? 18 : 4} rx={1} fill={f ? tone : "var(--rule)"} style={{ animationDelay: `${i * 6}ms` }} />
+      ))}
+      {alarmAt && (
+        <g>
+          <line className="alarm" x1={4 + (alarmAt - 1) * step + w / 2} x2={4 + (alarmAt - 1) * step + w / 2} y1={2} y2={36} />
+          <text x={Math.min(width - 90, 4 + (alarmAt - 1) * step + w / 2 + 6)} y={44}>
+            alarm · ticket {alarmAt}
+          </text>
+        </g>
+      )}
+    </svg>
+  );
+}
+
+/** A change with its 95% interval against zero and the tolerance. An alert is an interval past the tolerance. */
+export function ToleranceBar({ lo, hi, change, tolerance, alert }: { lo: number; hi: number; change: number; tolerance: number; alert: boolean }) {
+  const width = 220;
+  const height = 22;
+  const lim = Math.max(0.05, Math.abs(lo), Math.abs(hi), tolerance) * 1.1;
+  const x = (v: number) => 6 + ((v + lim) / (2 * lim)) * (width - 12);
+  const color = alert ? "var(--lamp-fail)" : "var(--ink-3)";
+  return (
+    <svg className="chart tol" viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`change ${signed(change, 3)}, interval ${signed(lo, 3)} to ${signed(hi, 3)}, tolerance ${signed(tolerance, 3)}`}>
+      <rect className="tol-zone" x={x(tolerance)} y={3} width={Math.max(0, width - 6 - x(tolerance))} height={height - 6} />
+      <line className="zero" x1={x(0)} x2={x(0)} y1={2} y2={height - 2} />
+      <line className="tol-line" x1={x(tolerance)} x2={x(tolerance)} y1={2} y2={height - 2} />
+      <line x1={x(lo)} x2={x(hi)} y1={height / 2} y2={height / 2} stroke={color} strokeWidth={2.5} strokeLinecap="round" />
+      <circle cx={x(change)} cy={height / 2} r={3.5} fill={color} />
     </svg>
   );
 }

@@ -21,7 +21,12 @@ def test_flagship_demo_end_to_end(tmp_path: Path) -> None:
         tmp_path / "demo",
     )
     keys = [s.key for s in res.steps]
-    assert keys == ["release_v1", "incident", "diagnosis", "release_v2", "impact"]
+    assert keys == ["release_v1", "incident", "regression", "diagnosis", "release_v2", "impact"]
+    # The label-free monitor sees the incident, and its alerts stop after the fix.
+    assert {"stale_context", "critical_flag"} <= {
+        a.signal for a in res.monitors["during_incident"].alerts
+    }
+    assert res.monitors["after_fix"].alerts == []
     # The incident causes a regression, and the fix removes it.
     assert res.comparisons["v1_vs_monitor"].diff.mean < 0
     assert res.comparisons["monitor_vs_v2"].diff.mean > 0
@@ -42,10 +47,11 @@ def test_flagship_demo_end_to_end(tmp_path: Path) -> None:
         or index["provenance"] == ["pipeline-test"]
         or "pipeline-test" in index["provenance"]
     )
-    assert len(index["steps"]) == 5 and index["detail_runs"]
+    assert len(index["steps"]) == 6 and index["detail_runs"]
     run_id = index["detail_runs"][0]
     assert any((out / "trials" / run_id).iterdir())
     assert (out / "releases.json").exists() and (out / "impact.json").exists()
+    assert (out / "monitor.json").exists()
     manifest = json.loads((tmp_path / "web" / "manifest.json").read_text())
     assert manifest["tenants"] == [
         {"id": "ledgerloop", "display_name": "Ledgerloop (fictional)", "pack": "billing"}

@@ -1,0 +1,17 @@
+.git
+.venv
+**/__pycache__
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.superpowers
+runs
+data
+demo-output
+releases
+artifacts
+web/node_modules
+web/.next
+web/out
+web/public/demo
+*.db

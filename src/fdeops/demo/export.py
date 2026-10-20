@@ -80,6 +80,20 @@ def export_demo(res: DemoResult, out: Path) -> Path:
                 )
     for name, cmp in res.comparisons.items():
         _write(out / "compare" / f"{name}.json", cmp.model_dump(mode="json"))
+    if res.monitors:
+        _write(
+            out / "monitor.json",
+            {
+                name: {
+                    **m.model_dump(mode="json"),
+                    "report_md": res.reports.get(
+                        "monitor_incident" if name == "during_incident" else "monitor_after_fix",
+                        "",
+                    ),
+                }
+                for name, m in res.monitors.items()
+            },
+        )
     if res.diagnosis is not None:
         _write(out / "diagnosis.json", res.diagnosis.model_dump(mode="json"))
     if res.registry is not None:

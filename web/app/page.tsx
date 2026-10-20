@@ -10,7 +10,8 @@ import type { Releases } from "@/lib/types";
 
 const STEP_LINK: Record<string, { href: string; label: string }> = {
   release_v1: { href: "/releases/", label: "Open the gates" },
-  incident: { href: "/runs/", label: "Open the comparison" },
+  incident: { href: "/monitor/", label: "Open the monitor" },
+  regression: { href: "/runs/", label: "Open the comparison" },
   diagnosis: { href: "/diagnosis/", label: "Open the diagnosis" },
   release_v2: { href: "/releases/", label: "Open the decision" },
   impact: { href: "/impact/", label: "Open the ROI" },
@@ -19,6 +20,7 @@ const STEP_LINK: Record<string, { href: string; label: string }> = {
 const RUN_NAMES: Record<string, string> = {
   v1_test: "v1 before the incident",
   monitor_test: "v1 under the incident",
+  monitor_dev: "v1 under the incident (dev split)",
   v2_test: "v2 with the fix",
   faq_test: "FAQ baseline (no LLM)",
 };

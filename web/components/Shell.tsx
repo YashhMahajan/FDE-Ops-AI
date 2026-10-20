@@ -7,6 +7,7 @@ import { TenantProvider, useTenant } from "./TenantContext";
 const NAV = [
   { href: "/", label: "Release log" },
   { href: "/releases/", label: "Release gates" },
+  { href: "/monitor/", label: "Monitor" },
   { href: "/runs/", label: "Comparisons" },
   { href: "/traces/", label: "Traces" },
   { href: "/diagnosis/", label: "Diagnosis" },

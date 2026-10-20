@@ -1,10 +1,12 @@
 """The flagship demo, from incident to approved fix, in one function.
 
 1. Release v1 (the clean configuration) after its gates pass.
-2. Incident: the refund policy changes, and the index keeps the previous section.
-3. Monitoring runs of v1 under the incident show a regression (a paired comparison).
+2. Incident: the refund policy changes, and the index keeps the previous section. The production
+   monitor gives alerts from signals that a live deployment can see (no oracle).
+3. An evaluation of v1 under the incident measures the regression (a paired comparison).
 4. Diagnosis on the dev split confirms stale knowledge by intervention.
-5. The improvement loop proposes v2 and stops. A person with the approver role approves v2.
+5. The improvement loop proposes v2 and stops. A person with the approver role approves v2. The
+   monitor shows that the alerts stop.
 6. ROI against a person only and against the FAQ baseline, opportunities and a roadmap memo.
 
 Each step keeps its evidence: run IDs, gate results, the decision memo and the reports. With the
@@ -33,6 +35,8 @@ from fdeops.improve.loop import ImprovementResult, improve
 from fdeops.insights.opportunities import Opportunity, build_opportunities, load_effort
 from fdeops.insights.roadmap import render_roadmap
 from fdeops.llm.types import LLMClient
+from fdeops.monitor.detect import MonitorReport
+from fdeops.monitor.report import monitor_runs, render_monitor, save_monitor
 from fdeops.release.gates import evaluate_gates
 from fdeops.release.integration import run_integration_suite
 from fdeops.release.memo import render_memo
@@ -56,6 +60,7 @@ class DemoResult:
     steps: list[DemoStep] = field(default_factory=list)
     runs: dict[str, RunResult] = field(default_factory=dict)
     comparisons: dict[str, Comparison] = field(default_factory=dict)
+    monitors: dict[str, MonitorReport] = field(default_factory=dict)
     diagnosis: Diagnosis | None = None
     improvement: ImprovementResult | None = None
     roi: ROIResult | None = None
@@ -116,18 +121,46 @@ def run_flagship(
         )
     )
 
-    # 2 and 3. The incident, and monitoring that finds the regression.
+    # 2. The incident, and the production monitor that sees it without an oracle.
     mon_test = keep("monitor_test", run_eval(tenant, config, test, llm, incident=incident))
     mon_dev = keep("monitor_dev", run_eval(tenant, config, dev, llm, incident=incident))
+    during = monitor_runs(tenant, v1_test, mon_test)
+    res.monitors["during_incident"] = during
+    res.reports["monitor_incident"] = render_monitor(during)
+    save_monitor(during, runs_dir / mon_test.run_id)
+    first = min(
+        (a for a in during.alerts if a.detected_after),
+        key=lambda a: a.detected_after or 0,
+        default=None,
+    )
+    q = during.quality
+    res.steps.append(
+        DemoStep(
+            key="incident",
+            title=f"Incident: {incident.id}",
+            text=f"{incident.description} The production monitor gave {len(during.alerts)} "
+            f"alert(s): {', '.join(a.signal for a in during.alerts) or 'none'}."
+            + (
+                f" The first alarm ({first.signal}) came after {first.detected_after} ticket(s)."
+                if first
+                else ""
+            )
+            + f" The monitor saw {q.seen} of {q.failures} failures. {q.silent} failure(s) were "
+            "silent.",
+            refs={"reference_run": v1_test.run_id, "monitor_run": mon_test.run_id},
+        )
+    )
+
+    # 3. The evaluation measures the regression with the oracle.
     cmp = compare_runs(v1_test, mon_test)
     res.comparisons["v1_vs_monitor"] = cmp
     res.reports["comparison_incident"] = render_comparison(cmp)
     worst = min(cmp.by_scenario.items(), key=lambda kv: kv[1].mean)
     res.steps.append(
         DemoStep(
-            key="incident",
-            title=f"Incident: {incident.id}",
-            text=f"{incident.description} Monitoring of v1 under the incident: success changed by "
+            key="regression",
+            title="Regression measured",
+            text=f"An evaluation of v1 under the incident: success changed by "
             f"{cmp.diff.mean:+.3f} (95% CI {cmp.diff.lo:+.3f} to {cmp.diff.hi:+.3f}). The "
             f"largest change is in {worst[0]} ({worst[1].mean:+.3f}).",
             refs={"baseline_run": v1_test.run_id, "monitor_run": mon_test.run_id},
@@ -175,6 +208,9 @@ def run_flagship(
         cmp2 = compare_runs(mon_test, res.runs["v2_test"])
         res.comparisons["monitor_vs_v2"] = cmp2
         res.reports["comparison_fix"] = render_comparison(cmp2)
+        after = monitor_runs(tenant, v1_test, res.runs["v2_test"])
+        res.monitors["after_fix"] = after
+        res.reports["monitor_after_fix"] = render_monitor(after)
     res.steps.append(
         DemoStep(
             key="release_v2",
@@ -184,6 +220,12 @@ def run_flagship(
             + (
                 f" Dev change: {result.dev_experiment['diff_mean']:+.3f}."
                 if result.dev_experiment
+                else ""
+            )
+            + (
+                f" After the fix, the monitor gives {len(res.monitors['after_fix'].alerts)} "
+                "alert(s)."
+                if "after_fix" in res.monitors
                 else ""
             ),
             refs={

@@ -6,7 +6,7 @@ import { chromium } from "playwright";
 const [base = "http://127.0.0.1:4173", out = "screenshots"] = process.argv.slice(2);
 mkdirSync(out, { recursive: true });
 
-const pages = ["", "releases/", "runs/", "traces/", "diagnosis/", "roadmap/", "impact/"];
+const pages = ["", "releases/", "monitor/", "runs/", "traces/", "diagnosis/", "roadmap/", "impact/"];
 const variants = [
   { name: "ledgerloop-light", tenant: "ledgerloop", scheme: "light", viewport: { width: 1440, height: 1000 } },
   { name: "parcelpoint-dark", tenant: "parcelpoint", scheme: "dark", viewport: { width: 1440, height: 1000 } },

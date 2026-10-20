@@ -59,7 +59,7 @@ function Detail({ runId, caseId, trial }: { runId: string; caseId: string; trial
                   .map((m, i) => (
                     <div className="bubble" data-role={m.role} key={i}>
                       <span className="placard">{m.role === "tool" ? `tool · ${m.name}` : m.role}</span>
-                      {m.content && <pre>{m.content}</pre>}
+                      {m.content && <pre>{m.role === "tool" ? readable(m.content) : m.content}</pre>}
                       {m.tool_calls.map((c) => (
                         <pre key={c.id}>
                           → {c.name}({JSON.stringify(c.arguments)})
@@ -153,6 +153,15 @@ function Detail({ runId, caseId, trial }: { runId: string; caseId: string; trial
       }}
     </Load>
   );
+}
+
+/** Tool output is JSON. Indent it, and show the line breaks inside its strings as line breaks. */
+function readable(content: string): string {
+  try {
+    return JSON.stringify(JSON.parse(content), null, 2).replace(/\\n/g, "\n");
+  } catch {
+    return content;
+  }
 }
 
 export default function TracesPage() {

@@ -98,7 +98,7 @@ layers = [
   "fdeops.impact",
   "fdeops.improve",
   "fdeops.release",
-  "fdeops.diagnose",
+  "fdeops.diagnose | fdeops.monitor",
   "fdeops.eval",
   "fdeops.agent",
   "fdeops.tenancy",

@@ -41,7 +41,7 @@ export default function DiagnosisPage() {
                       <div className="row">
                         <Chip tone={verdictTone(x.verdict)}>{x.verdict}</Chip>
                         <span className="muted">
-                          {x.cluster.n_trials} trials · {pct(x.cluster.share_of_failures, 0)}
+                          {x.cluster.n_trials} {x.cluster.n_trials === 1 ? "trial" : "trials"} · {pct(x.cluster.share_of_failures, 0)}
                         </span>
                       </div>
                     </button>
@@ -60,7 +60,9 @@ export default function DiagnosisPage() {
                       <div>
                         <span className="placard">Evidence</span>
                         <ul style={{ margin: "6px 0 0", paddingLeft: 18 }}>
-                          {c.cluster.examples.map((e, i) => (
+                          {c.cluster.examples
+                            .filter((e, i, all) => all.findIndex((o) => o.kind === e.kind && o.ref === e.ref && o.detail === e.detail) === i)
+                            .map((e, i) => (
                             <li key={i}>
                               <span className="mono">{e.kind}</span> <span className="mono muted">{e.ref}</span> — {e.detail}
                             </li>

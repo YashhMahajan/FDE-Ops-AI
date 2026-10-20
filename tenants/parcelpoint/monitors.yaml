@@ -1,0 +1,35 @@
+# Production monitors for Parcelpoint. Each monitor must have an explanation ("why").
+# A rate tolerance is an absolute change. A value tolerance is a relative change.
+cusum_threshold: 4.0
+monitors:
+  - signal: critical_flag
+    tolerance: 0.01
+    shift: 0.05
+    severity: page
+    why: A wrong claim payment costs money. Parcelpoint accepts a small noise level before a page.
+  - signal: policy_flag
+    tolerance: 0.03
+    severity: ticket
+    why: Policy flags show claims or address changes that the policy does not let the agent do.
+  - signal: stale_context
+    tolerance: 0.02
+    severity: ticket
+    why: Superseded claim rules in the context come before wrong claim decisions.
+  - signal: tool_error
+    tolerance: 0.05
+    severity: page
+    why: The tracking API has timeouts at peak hours. An increase of more than 5 points is an outage.
+  - signal: escalation
+    tolerance: 0.08
+    severity: ticket
+    why: Parcelpoint has more specialists. Only a large increase of escalations needs a task from the team.
+  - signal: latency_ms
+    statistic: p95
+    tolerance: 0.30
+    severity: ticket
+    why: Shipping questions are not urgent. An increase of 30% or more of p95 is a warning.
+  - signal: tokens
+    statistic: mean
+    tolerance: 0.25
+    severity: ticket
+    why: More tokens for each ticket show a prompt or retrieval change, and they increase the cost.

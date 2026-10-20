@@ -31,6 +31,8 @@ jobs:
           python-version: ${{ matrix.python }}
       - run: uv sync --locked
       - run: uv run pytest --cov=fdeops --cov-report=term-missing
+      - name: Evaluation regression (cassette replay, no model calls)
+        run: uv run fdeops regress evals/regression.yaml --skip-missing
 
   postgres:
     # The storage, queue and API tests again, on a real Postgres (pgvector image).
@@ -97,3 +99,10 @@ jobs:
         with:
           name: web-static-site
           path: web/out
+
+  compose:
+    # The full stack in Docker: Postgres, the API and two workers process a real job.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: ./scripts/compose_smoke.sh

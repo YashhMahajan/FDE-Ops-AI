@@ -319,3 +319,52 @@ export interface Opportunity {
   decision: "build" | "not build";
   reason: string;
 }
+
+export interface MonitorResult {
+  signal: string;
+  description: string;
+  statistic: "rate" | "p95" | "mean";
+  direction: "up" | "down";
+  severity: "page" | "ticket";
+  why: string;
+  status: "alert" | "ok" | "too few samples" | "not measured";
+  reference: number;
+  current: number;
+  change: number;
+  lo: number;
+  hi: number;
+  tolerance: number;
+  n_reference: number;
+  n_current: number;
+  detected_after: number | null;
+}
+
+export interface SignalQuality {
+  signal: string;
+  flagged: number;
+  true_positive: number;
+  precision: number;
+  recall: number;
+}
+
+export interface MonitorReport {
+  tenant_id: string;
+  reference_run: string;
+  current_run: string;
+  provenance: string;
+  results: MonitorResult[];
+  quality: {
+    failures: number;
+    trials: number;
+    seen: number;
+    silent: number;
+    silent_rate: number;
+    silent_rate_hi: number;
+    review_sample: number | null;
+    signals: SignalQuality[];
+  };
+  streams: Record<string, boolean[]>;
+  report_md: string;
+}
+
+export type MonitorExport = Partial<Record<"during_incident" | "after_fix", MonitorReport>>;

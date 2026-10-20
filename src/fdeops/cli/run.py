@@ -23,6 +23,9 @@ def run(
     llm_mode: LLMMode = typer.Option(LLMMode.LIVE, "--llm-mode"),
     cassettes: Path | None = typer.Option(None, help="Cassette JSONL for record/replay"),
     model: str | None = typer.Option(None, help="Override the model name in the agent config"),
+    provider: str | None = typer.Option(
+        None, help="Override the provider (heuristic, openrouter, vllm, ollama, custom)"
+    ),
     base_url: str | None = typer.Option(None, help="Override the provider base URL"),
     heuristic_errors: str = typer.Option("", help="e.g. wrong_amount=0.2,miss_escalation=0.1"),
     workers: int = typer.Option(4, min=1),
@@ -36,10 +39,9 @@ def run(
     try:
         t = load_tenant(tenant)
         config = load_agent_config(agent)
-        if model:
-            config = config.model_copy(
-                update={"model": config.model.model_copy(update={"name": model})}
-            )
+        overrides = {k: v for k, v in {"name": model, "provider": provider}.items() if v}
+        if overrides:
+            config = config.model_copy(update={"model": config.model.model_copy(update=overrides)})
         ds = load_dataset(dataset, split)  # type: ignore[arg-type]
         settings = {"error_rates": parse_rates(heuristic_errors)} if heuristic_errors else {}
         agent_fn = load_external_agent(external) if external else None
