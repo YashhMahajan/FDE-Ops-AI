@@ -1,5 +1,5 @@
 # The static web UI with the flagship demo data. Three stages: demo data, site, server.
-FROM python:3.12-slim AS demo
+FROM python:3.14-slim AS demo
 COPY --from=ghcr.io/astral-sh/uv:0.12.1 /uv /usr/local/bin/uv
 WORKDIR /app
 COPY pyproject.toml uv.lock README.md ./
