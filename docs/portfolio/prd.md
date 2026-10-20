@@ -1,6 +1,6 @@
 # Product Requirements: FDE-Ops-AI
 
-*Language: ASD-STE100. Refer to the [glossary](../glossary.md). Status: approved for version 2.0. The tenants and their data are fictional.*
+*Status: approved for version 2.0. The tenants and their data are fictional.*
 
 ## 1. Problem
 
@@ -81,7 +81,6 @@ The results come from the [benchmark report](generated/benchmark-report.md) and 
 - No paid model APIs. The platform uses free models on OpenRouter, or open models with vLLM on a free GPU.
 - Each model call can go into a cassette. A replay costs nothing and gives the same result.
 - The author does not run services on a laptop. CI runs Postgres, Compose and the browser screenshots.
-- All documents use ASD-STE100. CI examines them.
 
 ## 6. Out of scope
 

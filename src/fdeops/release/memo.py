@@ -1,4 +1,4 @@
-"""The decision memo: one page that a reviewer reads before an approval. Language: ASD-STE100."""
+"""The decision memo: one page that a reviewer reads before an approval."""
 
 from fdeops.release.models import ReleaseDecision
 

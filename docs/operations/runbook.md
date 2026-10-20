@@ -1,6 +1,6 @@
 # Operations Runbook
 
-*Language: ASD-STE100. Refer to the [glossary](../glossary.md). Readers: the person on duty for the service.*
+*Readers: the person on duty for the service.*
 
 ## 1. Parts of the service
 

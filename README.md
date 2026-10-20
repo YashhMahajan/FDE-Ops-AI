@@ -1,6 +1,6 @@
 # FDE-Ops-AI
 
-**Deploy AI agents into business workflows. Then, prove with evidence that they can go to production.**
+**Deploy AI agents into real business workflows. Find each failure, prove its cause, and release a fix only when cost, latency and risk stay in limits.**
 
 A demo shows that an agent can answer one question correctly. FDE-Ops-AI answers the questions that come after the demo:
 
@@ -37,7 +37,7 @@ You must have Python 3.11 (or a subsequent version) and [uv](https://docs.astral
 
 ```bash
 uv sync
-make check                                   # lint, types, layers, STE docs, tests
+make check                                   # lint, types, layers, docs, tests
 
 # The flagship demo: release, incident, monitor alarm, diagnosis, gated fix, approval, ROI
 uv run fdeops demo --tenant tenants/ledgerloop --export web/public/demo
@@ -112,7 +112,7 @@ src/fdeops/
   jobs/        job queue in the database and the worker
   api/         FastAPI service
   demo/        the flagship demo, the web export and the portfolio documents
-  devtools/    the ASD-STE100 checker for documents
+  devtools/    the text checker for documents
   cli/         the `fdeops` command
 tenants/       one folder for each fictional customer (policy, KB, gates, monitors, costs)
 incidents/     incidents as YAML files, for each tenant
@@ -125,10 +125,6 @@ docs/          design, plans, guides, glossary and the portfolio documents
 ```
 
 An import-linter contract makes sure that each layer imports only from the layers below it. CI runs this contract.
-
-## Documentation style
-
-All documents use ASD-STE100 Simplified Technical English. The [glossary](docs/glossary.md) gives the technical nouns and technical verbs of this project. Run `uv run fdeops docs check README.md docs` to check a document.
 
 ## Status
 

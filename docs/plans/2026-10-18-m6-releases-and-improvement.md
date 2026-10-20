@@ -1,6 +1,6 @@
 # M6: Releases, Gates and the Improvement Loop
 
-*Language: ASD-STE100. Refer to the [glossary](../glossary.md). Design: sections 5.10 and 5.11.*
+*Design: sections 5.10 and 5.11.*
 
 **Goal.** Make each release a frozen bundle with evidence. A candidate goes to production only when it passes the gates of its tenant and a person with the approver role approves it. The improvement loop finds a fix on the dev split, validates it on the test split, and stops before production.
 

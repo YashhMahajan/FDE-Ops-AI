@@ -1,6 +1,6 @@
 # M7: Storage, API, Jobs and Authentication
 
-*Language: ASD-STE100. Refer to the [glossary](../glossary.md). Design: section 5.15.*
+*Design: section 5.15.*
 
 **Goal.** Make the platform a service that a team can share. The service has a database, an artifact store, a job queue, and an API with keys and roles. Each request goes through a tenant guard.
 

@@ -1,7 +1,5 @@
 # Data and Privacy
 
-*Language: ASD-STE100. Refer to the [glossary](../glossary.md).*
-
 ## Data in this repository
 
 All companies, persons, tickets and records in this repository are fictional. Each tenant file has `fictional: true`, and the loader stops if it is missing. Do not add real customer data.

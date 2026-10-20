@@ -1,6 +1,6 @@
 # M8: Business Impact and Product Intelligence
 
-*Language: ASD-STE100. Refer to the [glossary](../glossary.md). Design: sections 5.12 and 5.13.*
+*Design: sections 5.12 and 5.13.*
 
 **Goal.** Change model metrics into business decisions. Calculate the value of a deployment against two baselines, with its uncertainty. Change failure clusters into ranked product opportunities with evidence, and write a roadmap memo.
 

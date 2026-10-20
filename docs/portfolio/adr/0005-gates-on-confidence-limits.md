@@ -1,6 +1,6 @@
 # 0005: Release Gates on Confidence Limits
 
-*Language: ASD-STE100. Status: accepted.*
+*Status: accepted.*
 
 ## Context
 

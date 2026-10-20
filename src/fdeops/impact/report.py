@@ -1,4 +1,4 @@
-"""ROI report in Markdown. Language: ASD-STE100. Measured numbers and assumptions are separate."""
+"""ROI report in Markdown. Measured numbers and assumptions are separate."""
 
 import math
 

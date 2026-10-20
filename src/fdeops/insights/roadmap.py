@@ -1,4 +1,4 @@
-"""The roadmap memo. Language: ASD-STE100. It also tells what we do not build, and why."""
+"""The roadmap memo. It also tells what we do not build, and why."""
 
 from fdeops.insights.opportunities import FORMULA, Opportunity
 

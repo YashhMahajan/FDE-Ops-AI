@@ -2,7 +2,7 @@
 
 # Case Study: The Parcelpoint (fictional) Deployment
 
-*Language: ASD-STE100. The platform wrote this document from the tenant files and the records of the flagship demo. The company and its data are fictional.*
+*The platform wrote this document from the tenant files and the records of the flagship demo. The company and its data are fictional.*
 
 ## The customer
 

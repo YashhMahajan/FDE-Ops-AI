@@ -1,6 +1,6 @@
 # 0007: A Production Monitor Without an Oracle
 
-*Language: ASD-STE100. Status: accepted.*
+*Status: accepted.*
 
 ## Context
 

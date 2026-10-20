@@ -1,7 +1,5 @@
 # Real Model Runs
 
-*Language: ASD-STE100. Refer to the [glossary](../glossary.md).*
-
 The tests and the demo use a rule-based stand-in model. Its results have the label `pipeline-test`. They show that the platform operates. They do not measure an agent. This guide tells how to record runs with a real model, at no cost.
 
 ## How record and replay operate

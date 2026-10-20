@@ -48,7 +48,12 @@ export function Load<T>({ value, children }: { value: Loadable<T>; children: (da
 export function Markdown({ source }: { source: string }) {
   const html = useMemo(() => {
     const escaped = source.replace(/</g, "&lt;");
-    return marked.parse(escaped, { async: false, gfm: true }) as string;
+    const out = marked.parse(escaped, { async: false, gfm: true }) as string;
+    // A wide table scrolls. A scroll region must take keyboard focus (WCAG 2.1.1).
+    let n = 0;
+    return out
+      .replace(/<table>/g, () => `<div class="table-scroll" tabindex="0" role="region" aria-label="Table ${++n}"><table>`)
+      .replace(/<\/table>/g, "</table></div>");
   }, [source]);
   return <div className="md" dangerouslySetInnerHTML={{ __html: html }} />;
 }

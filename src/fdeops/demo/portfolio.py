@@ -1,8 +1,7 @@
 """Portfolio documents that the platform writes from its own records.
 
 The postmortem, the benchmark report and the deployment case study use only values from demo runs
-and from the tenant files. Thus, each number in them has a source. The text obeys ASD-STE100, and a
-test checks it.
+and from the tenant files. Thus, each number in them has a source. A test checks their text.
 """
 
 from collections.abc import Sequence
@@ -72,7 +71,7 @@ def render_postmortem(res: DemoResult) -> str:
         *_head([res]),
         f"# Postmortem: `{incident.id if incident else 'incident'}` at {t.config.display_name}",
         "",
-        "*Language: ASD-STE100. The platform wrote this document from the records of the "
+        "*The platform wrote this document from the records of the "
         "flagship demo. The tenant and its data are fictional.*",
         "",
         "## Summary",
@@ -242,8 +241,7 @@ def render_benchmark(results: Sequence[DemoResult]) -> str:
         *_head(results),
         "# Benchmark Report",
         "",
-        "*Language: ASD-STE100. The platform wrote this document from the records of the "
-        "flagship demo for each tenant.*",
+        "*The platform wrote this document from the records of the flagship demo for each tenant.*",
         "",
         "## Setup",
         "",
@@ -371,7 +369,7 @@ def render_case_study(base: DemoResult, new: DemoResult, repo_root: Path) -> str
         *_head([new]),
         f"# Case Study: The {t.config.display_name} Deployment",
         "",
-        "*Language: ASD-STE100. The platform wrote this document from the tenant files and the "
+        "*The platform wrote this document from the tenant files and the "
         "records of the flagship demo. The company and its data are fictional.*",
         "",
         "## The customer",

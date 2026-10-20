@@ -1,7 +1,5 @@
 # Configuration Reference
 
-*Language: ASD-STE100. Refer to the [glossary](../glossary.md).*
-
 The service reads its settings from environment variables at start-up. It examines them before it accepts a request. A wrong setting stops the start with a message that names the setting. The file `.env.example` gives a template.
 
 ## Storage

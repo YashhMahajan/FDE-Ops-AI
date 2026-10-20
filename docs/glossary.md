@@ -1,9 +1,8 @@
 # Glossary
 
-This project writes its documents in ASD-STE100 Simplified Technical English (STE), issue 9.
-STE lets a writer use the technical nouns and technical verbs of a subject field (rules 1.5, 1.8
-and 1.12). This glossary is the list of those terms for FDE-Ops-AI. The STE checker
-(`fdeops docs check`) accepts these terms. Do not use other words for the same items (rule 1.11).
+This glossary gives the technical nouns and technical verbs of FDE-Ops-AI, and their meaning in
+this project. The document check (`fdeops docs check`) accepts these terms. Do not use other
+words for the same items.
 
 ## Technical nouns
 

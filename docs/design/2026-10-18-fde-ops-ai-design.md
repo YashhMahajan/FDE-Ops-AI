@@ -1,6 +1,6 @@
 # FDE-Ops-AI: System Design
 
-*Status: approved. Version 2.0 contains milestones M0 to M10. This is a living document. Language: ASD-STE100 (refer to the [glossary](../glossary.md)).*
+*Status: approved. Version 2.0 contains milestones M0 to M10. This is a living document.*
 
 ## 1. Intent
 
@@ -70,7 +70,6 @@ The secondary purpose has a lower priority. Developers can connect their own age
 | No Docker and no long-running services on the Mac of the author (M2, 8 GB) | Local development uses **embedded storage (SQLite) and in-process components only**. Postgres, workers and the full stack operate in **GitHub Actions** service containers and in deployment targets. The Docker files are part of the product, and CI makes sure that they operate. |
 | No fixed schedule. A thorough result is mandatory. | Work in milestones. Each milestone must be complete, with tests, before the next milestone starts. |
 | Start with no code | Do not use code from other projects of the author. |
-| ASD-STE100 for all documents | `fdeops docs check` finds the STE rules that a program can find. CI runs it. |
 
 ## 4. System overview
 
@@ -351,10 +350,10 @@ A **static demo build** reads exported JSON snapshots. Thus, a public demo needs
 
 ### 5.17 Infrastructure and deployment
 
-- Python 3.11 or a subsequent version, with `uv`. Tools: ruff, mypy (strict for `core` and `eval`), pytest, import-linter and the STE checker.
+- Python 3.11 or a subsequent version, with `uv`. Tools: ruff, mypy (strict for `core` and `eval`), pytest, import-linter and the document checker.
 - Dockerfiles for the API, the worker and the web UI. A `docker-compose.yml` for the full stack (API, worker, Postgres with pgvector, web UI).
 - GitHub Actions:
-  - lint, types, STE documents and tests for each push,
+  - lint, types, document checks and tests for each push,
   - integration tests against a Postgres service container,
   - an **evaluation regression job** that replays cassettes. The job stops the pull request if a gate has a regression.
   - a smoke test of the Compose stack.

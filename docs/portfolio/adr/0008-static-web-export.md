@@ -1,6 +1,6 @@
 # 0008: A Static Web UI from an Export
 
-*Language: ASD-STE100. Status: accepted.*
+*Status: accepted.*
 
 ## Context
 

@@ -1,6 +1,6 @@
 # M4: Diagnosis Plan
 
-*Language: ASD-STE100. Refer to the [glossary](../glossary.md). Design: section 5.9.*
+*Design: section 5.9.*
 
 **Goal.** For each failed trial, find the class of the failure, put failures into clusters, and test the possible causes with counterfactual replay. Give a verdict that does not tell more than the evidence shows.
 

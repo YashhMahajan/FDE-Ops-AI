@@ -1,6 +1,6 @@
 # 0003: A Job Queue in Postgres, Not Celery and Redis
 
-*Language: ASD-STE100. Status: accepted.*
+*Status: accepted.*
 
 ## Context
 

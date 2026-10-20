@@ -1,6 +1,6 @@
 # 0006: A Cause Is Confirmed Only by an Intervention
 
-*Language: ASD-STE100. Status: accepted.*
+*Status: accepted.*
 
 ## Context
 

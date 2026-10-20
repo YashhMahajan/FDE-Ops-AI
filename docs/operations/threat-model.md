@@ -1,7 +1,5 @@
 # Threat Model
 
-*Language: ASD-STE100. Refer to the [glossary](../glossary.md).*
-
 ## Assets
 
 | asset | why it is important |

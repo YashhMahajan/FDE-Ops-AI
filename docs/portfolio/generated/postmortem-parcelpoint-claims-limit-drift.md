@@ -2,7 +2,7 @@
 
 # Postmortem: `claims-limit-drift` at Parcelpoint (fictional)
 
-*Language: ASD-STE100. The platform wrote this document from the records of the flagship demo. The tenant and its data are fictional.*
+*The platform wrote this document from the records of the flagship demo. The tenant and its data are fictional.*
 
 ## Summary
 
@@ -32,12 +32,12 @@ The monitor saw 8 of 8 failed trials. 0 failure(s) had no flag.
 | step | event | evidence |
 |---|---|---|
 | 0 | The policy document changes. The index keeps the previous section. | incident `claims-limit-drift` |
-| 1 | First alarm: `stale_context` after 8 ticket(s) (about 7 minutes). | run `run_01m5by58kz848dmsqcpsfk0t8m` |
-| 2 | The evaluation measures the regression (-0.121). | runs `run_01m5by57pm4vjygd8vcf1vrgje` and `run_01m5by58kz848dmsqcpsfk0t8m` |
-| 3 | Diagnosis: `stale_knowledge:damage_claim_large`, confirmed by intervention. | run `run_01m5by58ze74ftwrhw6ejgwzxb` |
-| 4 | The improvement loop proposes `freshness_filter` and stops at `pending_approval`. | proposal `imp_01m5by59k03hwtdj9zx9qrp0ym` |
-| 5 | A person with the approver role approves v2. | decision `dec_01m5by5bgs4vzyrk2xds7g7n94` |
-| 6 | The monitor gives 0 alert(s) for v2. | run `run_01m5by5b2hftz7vfthgc4a1sh1` |
+| 1 | First alarm: `stale_context` after 8 ticket(s) (about 7 minutes). | run `run_01m5caq74z3z61cz4atw05h0bj` |
+| 2 | The evaluation measures the regression (-0.121). | runs `run_01m5caq6895j16bgcvfbw6r75g` and `run_01m5caq74z3z61cz4atw05h0bj` |
+| 3 | Diagnosis: `stale_knowledge:damage_claim_large`, confirmed by intervention. | run `run_01m5caq7g81qwnyzhv7hvw5g4k` |
+| 4 | The improvement loop proposes `freshness_filter` and stops at `pending_approval`. | proposal `imp_01m5caq83d021bgjzgjd44rsz2` |
+| 5 | A person with the approver role approves v2. | decision `dec_01m5caq9zn8rerj9vzzxf391bz` |
+| 6 | The monitor gives 0 alert(s) for v2. | run `run_01m5caq9g3dbxqgxfb2h7vv201` |
 
 ## Root cause
 

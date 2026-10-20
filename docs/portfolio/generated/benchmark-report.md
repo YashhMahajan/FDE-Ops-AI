@@ -2,7 +2,7 @@
 
 # Benchmark Report
 
-*Language: ASD-STE100. The platform wrote this document from the records of the flagship demo for each tenant.*
+*The platform wrote this document from the records of the flagship demo for each tenant.*
 
 ## Setup
 

@@ -1,7 +1,5 @@
 # Security Policy
 
-*Language: ASD-STE100. Refer to the [glossary](docs/glossary.md).*
-
 ## Supported versions
 
 | version | security fixes |

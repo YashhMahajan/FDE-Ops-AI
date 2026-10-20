@@ -1,6 +1,6 @@
 # M0 to M3: Work Record
 
-*Status: complete. Language: ASD-STE100. Refer to the [glossary](../glossary.md).*
+*Status: complete.*
 
 **Goal.** Make a Python library and a CLI that do these tasks without a network, a GPU or a service:
 

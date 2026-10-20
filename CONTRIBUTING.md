@@ -1,7 +1,5 @@
 # Contributing
 
-*Language: ASD-STE100. Refer to the [glossary](docs/glossary.md).*
-
 ## Set up
 
 You must have Python 3.11 (or a subsequent version), [uv](https://docs.astral.sh/uv/) and, for the web UI, Node 22 with pnpm 11.
@@ -11,7 +9,7 @@ uv sync
 make check
 ```
 
-`make check` runs the linter, the type checks, the layer contract, the STE check of the documents and all tests. A change must pass it before you commit it.
+`make check` runs the linter, the type checks, the layer contract, the check of the documents and all tests. A change must pass it before you commit it.
 
 ## Rules for a change
 
@@ -21,7 +19,7 @@ make check
 4. **No tenant names in platform code.** Tenant settings go in `tenants/<id>/`. A test makes sure of this.
 5. **Database changes.** A change to a table needs a migration. Make it with Alembic, and the migration test examines it.
 6. **Dependencies.** Add a dependency only when it is necessary. CI examines its license and its known vulnerabilities.
-7. **Documents.** Write in ASD-STE100. Run `uv run fdeops docs check README.md docs`.
+7. **Documents.** Use the terms in the [glossary](docs/glossary.md). Run `uv run fdeops docs check README.md docs`.
 8. **Fictional data only.** Do not add real customer data, real names or real tickets.
 
 ## Database migrations

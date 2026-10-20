@@ -1,4 +1,4 @@
-"""Markdown diagnosis report. The text obeys ASD-STE100, and a test checks it."""
+"""Markdown diagnosis report. A test checks its text."""
 
 import json
 from pathlib import Path

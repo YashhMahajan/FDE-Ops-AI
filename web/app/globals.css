@@ -10,7 +10,7 @@
   --sheet-2: #eef2f5;
   --ink: #0e1a2b;
   --ink-2: #435469;
-  --ink-3: #7a8a9c;
+  --ink-3: #5b6b7d;
   --rule: #c9d3dc;
   --rule-strong: #9eadbb;
 
@@ -23,6 +23,9 @@
   --lamp-fail: #cf4a35;
   --lamp-fail-lit: #ff8a70;
   --lamp-off: #3a4a5c;
+  --pass-ink: #0a7360;
+  --warn-ink: #8a5a08;
+  --fail-ink: #b23a27;
 
   --focus: #d08715;
   --select: #fff1d6;
@@ -47,12 +50,15 @@
     --sheet-2: #162233;
     --ink: #e4ebf2;
     --ink-2: #a5b3c3;
-    --ink-3: #6f8094;
+    --ink-3: #8a9aad;
     --rule: #233247;
     --rule-strong: #34465d;
     --glass: #070d16;
     --glass-2: #0e1826;
     --select: #2a2214;
+    --pass-ink: #43e0c0;
+    --warn-ink: #ffc55c;
+    --fail-ink: #ff8a70;
   }
 }
 
@@ -410,13 +416,13 @@ a {
 }
 
 .chip-pass {
-  color: var(--lamp-pass);
+  color: var(--pass-ink);
 }
 .chip-warn {
-  color: var(--lamp-warn);
+  color: var(--warn-ink);
 }
 .chip-fail {
-  color: var(--lamp-fail);
+  color: var(--fail-ink);
 }
 .chip-off {
   color: var(--ink-3);
@@ -433,7 +439,13 @@ a {
   box-shadow: inset 0 0 0 1px #24364b, inset 0 2px 12px rgba(0, 0, 0, 0.45);
 }
 
+.lamp-cell {
+  display: flex;
+}
+
 .lamp {
+  flex: 1;
+  width: 100%;
   position: relative;
   border-radius: var(--radius-s);
   background: var(--glass-2);
@@ -990,9 +1002,11 @@ a {
   border-collapse: collapse;
   width: 100%;
   font-size: 13px;
+  margin: 0;
+}
+
+.md .table-scroll {
   margin: 10px 0;
-  display: block;
-  overflow-x: auto;
 }
 
 .md th,
@@ -1117,6 +1131,12 @@ a {
 
 .table-scroll {
   overflow-x: auto;
+  border-radius: var(--radius-s);
+}
+
+.table-scroll:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
 }
 
 details.panel > summary {

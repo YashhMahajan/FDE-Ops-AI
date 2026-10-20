@@ -1,7 +1,5 @@
 # Portfolio Documents
 
-*Language: ASD-STE100. Refer to the [glossary](../glossary.md).*
-
 These documents explain the product, its decisions and its results. The platform writes the documents in `generated/` from its own records. A person wrote the other documents.
 
 | document | file | source |

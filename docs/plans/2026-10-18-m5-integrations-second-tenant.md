@@ -1,6 +1,6 @@
 # M5: Integrations and a Second Tenant
 
-*Language: ASD-STE100. Refer to the [glossary](../glossary.md). Design: sections 5.2, 5.5 and 5.14.*
+*Design: sections 5.2, 5.5 and 5.14.*
 
 **Goal.** Show that the platform is a product and not one demo. A second tenant in a different domain must use the same platform with configuration only. Incidents must be files that a person can run again. Bad data must give a report, not a failure.
 

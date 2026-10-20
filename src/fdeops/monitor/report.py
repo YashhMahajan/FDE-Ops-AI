@@ -1,6 +1,6 @@
 """Monitor a current run against a reference run, and write the report.
 
-The text obeys ASD-STE100.
+A test checks the text.
 """
 
 import json

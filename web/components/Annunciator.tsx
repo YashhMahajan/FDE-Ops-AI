@@ -38,20 +38,20 @@ export function Annunciator({
   return (
     <div className="annunciator" data-lamp-test={lampTest} role="list" aria-label={ariaLabel}>
       {gates.map((g) => (
-        <button
-          key={g.gate}
-          type="button"
-          role="listitem"
-          className="lamp"
-          data-state={g.status}
-          aria-pressed={selected === g.gate}
-          onClick={() => onSelect?.(g.gate)}
-          title={g.why}
-        >
-          <span className="lamp-face">{label(g.gate)}</span>
-          <span className="lamp-state">{stateText[g.status]}</span>
-          <span className="lamp-detail">{g.observed}</span>
-        </button>
+        <div key={g.gate} role="listitem" className="lamp-cell">
+          <button
+            type="button"
+            className="lamp"
+            data-state={g.status}
+            aria-pressed={selected === g.gate}
+            onClick={() => onSelect?.(g.gate)}
+            title={g.why}
+          >
+            <span className="lamp-face">{label(g.gate)}</span>
+            <span className="lamp-state">{stateText[g.status]}</span>
+            <span className="lamp-detail">{g.observed}</span>
+          </button>
+        </div>
       ))}
     </div>
   );

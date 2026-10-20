@@ -1,7 +1,5 @@
 # Architecture Decision Records
 
-*Language: ASD-STE100. Refer to the [glossary](../../glossary.md).*
-
 Each record tells the context, the decision, the alternatives and the results of one decision. A new decision that changes a previous decision gets a new record. It does not change the previous record.
 
 | number | decision | status |

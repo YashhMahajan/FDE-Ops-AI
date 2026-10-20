@@ -1,6 +1,6 @@
 # Roadmap Memo: The Next Two Milestones
 
-*Language: ASD-STE100. Refer to the [glossary](../glossary.md). Owner: the product manager of the platform. Readers: the platform team and the FDE team.*
+*Owner: the product manager of the platform. Readers: the platform team and the FDE team.*
 
 ## Decision
 

@@ -2,7 +2,7 @@
 
 # Postmortem: `refund-window-drift` at Ledgerloop (fictional)
 
-*Language: ASD-STE100. The platform wrote this document from the records of the flagship demo. The tenant and its data are fictional.*
+*The platform wrote this document from the records of the flagship demo. The tenant and its data are fictional.*
 
 ## Summary
 
@@ -32,12 +32,12 @@ The monitor saw 7 of 7 failed trials. 0 failure(s) had no flag.
 | step | event | evidence |
 |---|---|---|
 | 0 | The policy document changes. The index keeps the previous section. | incident `refund-window-drift` |
-| 1 | First alarm: `stale_context` after 1 ticket(s) (about 4 minutes). | run `run_01m5by54194d9tf81jdeeyvdtq` |
-| 2 | The evaluation measures the regression (-0.101). | runs `run_01m5by53678fc825y3x2bvb2nc` and `run_01m5by54194d9tf81jdeeyvdtq` |
-| 3 | Diagnosis: `stale_knowledge:refund_outside_window`, confirmed by intervention. | run `run_01m5by54cp6694zs5srsqx8esg` |
-| 4 | The improvement loop proposes `freshness_filter` and stops at `pending_approval`. | proposal `imp_01m5by54zacestyh78jk74wehf` |
-| 5 | A person with the approver role approves v2. | decision `dec_01m5by56sfd6ynaa8xbz3sxw1h` |
-| 6 | The monitor gives 0 alert(s) for v2. | run `run_01m5by56cheddqfy38tk5va7fr` |
+| 1 | First alarm: `stale_context` after 1 ticket(s) (about 4 minutes). | run `run_01m5caq2nydvj8xsqh0d3hcm7d` |
+| 2 | The evaluation measures the regression (-0.101). | runs `run_01m5caq1va0gsv94npg4xvm34x` and `run_01m5caq2nydvj8xsqh0d3hcm7d` |
+| 3 | Diagnosis: `stale_knowledge:refund_outside_window`, confirmed by intervention. | run `run_01m5caq319fvgj9j9h3szd8702` |
+| 4 | The improvement loop proposes `freshness_filter` and stops at `pending_approval`. | proposal `imp_01m5caq3k678t7b2jp68qr98eq` |
+| 5 | A person with the approver role approves v2. | decision `dec_01m5caq5bpat6tywfms5da9t9y` |
+| 6 | The monitor gives 0 alert(s) for v2. | run `run_01m5caq4z4b7m6hsbeg423wy2k` |
 
 ## Root cause
 

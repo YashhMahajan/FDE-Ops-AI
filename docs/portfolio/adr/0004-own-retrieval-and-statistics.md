@@ -1,6 +1,6 @@
 # 0004: Our Own BM25, Embedder and Statistics
 
-*Language: ASD-STE100. Status: accepted.*
+*Status: accepted.*
 
 ## Context
 

@@ -14,7 +14,7 @@ types:
 layers:
 	uv run lint-imports
 
-# ASD-STE100 Simplified Technical English for all documents
+# Text check for all documents
 docs:
 	uv run fdeops docs check $(DOCS)
 

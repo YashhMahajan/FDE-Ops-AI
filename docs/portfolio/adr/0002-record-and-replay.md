@@ -1,6 +1,6 @@
 # 0002: Record and Replay of Each Model Call, with Free Models Only
 
-*Language: ASD-STE100. Status: accepted.*
+*Status: accepted.*
 
 ## Context
 

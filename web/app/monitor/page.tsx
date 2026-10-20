@@ -185,7 +185,7 @@ export default function MonitorPage() {
                   <span className="spacer" />
                   <span className="muted">line = 95% interval · shaded = past the tolerance</span>
                 </div>
-                <div className="table-scroll">
+                <div className="table-scroll" tabIndex={0} role="region" aria-label="All monitors">
                   <table className="table">
                     <thead>
                       <tr>

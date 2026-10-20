@@ -1,6 +1,6 @@
 # 0001: Python, Pydantic and a Synchronous Core
 
-*Language: ASD-STE100. Status: accepted.*
+*Status: accepted.*
 
 ## Context
 
