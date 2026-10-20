@@ -2,7 +2,35 @@
 
 All entries use ASD-STE100. Refer to the [glossary](docs/glossary.md).
 
-## Unreleased
+## 2.0.0 (2026-10-20)
+
+Version 2.0 completes milestones M0 to M10. All results have the label `pipeline-test` until real model runs (M11).
+
+### Production monitor without an oracle
+
+- `fdeops monitor` compares a current window of traffic with a reference window. It uses only signals that a live deployment can see: guardrail flags, superseded knowledge in the context, escalations, tool errors, episode errors, latency and tokens.
+- Each tenant has `monitors.yaml`. Each monitor has a tolerance, a direction, a severity and an explanation.
+- An alert needs all of the 95% interval of the change to be more than the tolerance. Rates use the Newcombe interval. Values use a bootstrap interval of the ratio.
+- A Bernoulli CUSUM in ticket order tells how many tickets go by before the alarm.
+- In the simulation, the report measures the precision and the recall of each signal, and the silent failures. It gives a review sample size for the silent failures.
+- The flagship demo has a monitor step. In the drift incident, superseded context gives the first alarm after one ticket. The critical flags come after about 50 tickets. After the fix, the monitor gives no alerts.
+- *What this shows:* the platform finds a production failure without the correct answers, and it tells which failures it cannot see.
+
+### M10: Deployment kit and portfolio documents
+
+- Docker images for the API, the worker and the web UI. Compose with Postgres (pgvector), the API and two workers. A CI job starts the stack and runs a job through it.
+- `render.yaml` for free Render plans, and a Pages workflow that runs only when a person starts it.
+- `fdeops regress` replays cassettes and compares each check with a minimum quality. CI runs it, and it skips a check that has no cassette.
+- A kit for real model runs at no cost: `scripts/record_openrouter.sh` for free OpenRouter models, and a Kaggle notebook that serves an open model with vLLM.
+- `fdeops portfolio` writes the postmortem, the benchmark report, the case study and the roadmap memos from the demo records.
+- Written portfolio documents: the PRD, eight architecture decision records and the roadmap memo. The [portfolio index](docs/portfolio/README.md) connects each part of the mission to the code and the tests.
+- The flagship incident of each tenant is in `tenant.yaml`. A test makes sure that no platform code names a tenant.
+
+### M9: Web UI
+
+- A static Next.js UI that reads the demo export. It needs no backend and no model.
+- Pages: release log, release gates (an annunciator panel), monitor, comparisons (interval charts), traces (a drawer with the transcript, tool calls, spans and scores), diagnosis, roadmap and business value.
+- CI builds the site and makes screenshots of each page on a desktop, on a phone and in dark mode.
 
 ### Documentation
 

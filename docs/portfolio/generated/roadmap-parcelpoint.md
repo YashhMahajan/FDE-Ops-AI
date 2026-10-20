@@ -14,7 +14,7 @@ The values are estimates. They use measured failure rates and the likely value o
 - Expected benefit: about $1,103,333 each month for 0.5 engineer weeks (a filter in the retriever and a reindex job).
 - Score: 1,985,999. Confidence: 90%.
 - Validation plan: Run the candidate with freshness_filter on the test split. The gates must pass, and the cluster cases must go into the regression suite.
-- Evidence: run run_01m5bt25010kx6pr4x0qh2g2hv, cluster stale_knowledge:damage_claim_large: 8 trials, 8 cases, stale_chunk claims#large-claims@v1, violation claim.over_auto_limit, stale_chunk claims#large-claims@v1.
+- Evidence: run run_01m5bv1ywm9nb3wej68g643tt0, cluster stale_knowledge:damage_claim_large: 8 trials, 8 cases, stale_chunk claims#large-claims@v1, violation claim.over_auto_limit.
 
 ## What we do not build
 

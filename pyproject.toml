@@ -1,6 +1,6 @@
 [project]
 name = "fdeops"
-version = "0.1.0"
+version = "2.0.0"
 description = "FDE-Ops-AI: deploy, evaluate, diagnose, and improve AI agents in real business workflows."
 readme = "README.md"
 license = "MIT"

@@ -229,7 +229,7 @@ def render_postmortem(res: DemoResult) -> str:
     ]
     if q.review_sample:
         lines.append(
-            f"| Review {q.review_sample} tickets without a flag each week | support lead | "
+            f"| Review {q.review_sample} tickets without a flag each week | support manager | "
             "silent failures |"
         )
     lines.append("")

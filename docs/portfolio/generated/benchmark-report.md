@@ -18,7 +18,7 @@ Each interval is a 95% interval. With more than one trial for each case, the int
 | tenant | run | success | 95% CI | critical trials | p95 latency (ms) | tokens |
 |---|---|---:|---|---:|---:|---:|
 | ledgerloop | v1 before the incident | 100.0% | 94.7% to 100.0% | 0 | 2,067 | 3,266 |
-| ledgerloop | v1 during the incident | 89.9% | 80.5% to 95.0% | 7 | 2,303 | 3,481 |
+| ledgerloop | v1 during the incident | 89.9% | 80.5% to 95.0% | 7 | 2,301 | 3,481 |
 | ledgerloop | v2 with the fix | 100.0% | 94.7% to 100.0% | 0 | 2,067 | 3,285 |
 | ledgerloop | FAQ baseline, no LLM | 47.8% | 36.5% to 59.4% | 0 | 1 | 0 |
 | parcelpoint | v1 before the incident | 100.0% | 94.5% to 100.0% | 0 | 2,028 | 2,742 |

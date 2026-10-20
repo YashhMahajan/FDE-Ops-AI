@@ -13,18 +13,23 @@ The first workflow is a customer-support agent for a B2B SaaS company. The agent
 
 > All companies, persons and data in this repository are **fictional**. Each report shows the source of its numbers: `pipeline-test`, `measured-in-simulation` or `estimated`. We do not show simulated results as real customer results.
 
-## What operates at this time (M0 to M3)
+## What the platform does
+
+The mission: deploy AI agents into business workflows, evaluate them, find production failures, find the causes, and make the agents better. Cost, latency and risk must stay in the limits of each customer. The [portfolio index](docs/portfolio/README.md) connects each part of the mission to the code and the tests.
 
 | Area | Function |
 |---|---|
-| Simulated world | The tenant *Ledgerloop* is a fictional billing SaaS company. It has a versioned knowledge base with an effective date for each document, accounts, invoices, and billing, account and ticket APIs. |
-| Ground truth | A policy engine is the oracle. Twelve scenario templates make cases for refunds, clarification, permissions, prompt injection and unknown requesters. |
-| Datasets | Each dataset has a version and a content hash. The dev split and the test split do not change when you add cases. The loader finds changes to a dataset file. |
-| Agent | The agent is an explicit tool loop. Incorrect model output goes back to the model as an error message. It does not stop the program. |
-| Integration layer | Timeouts, retries, a circuit breaker, a rate limit and **idempotency keys**. A refund that the connector sends again occurs only one time. There is also a permission guard, an audit log with a hash chain, fault injection and a policy monitor. |
-| Models | One client for the OpenAI-compatible protocol. The presets are free: **OpenRouter free models**, vLLM and Ollama. **Cassettes** record each model call. A replay of a cassette gives the same results and costs nothing. |
-| Evaluation | Deterministic evaluators measure the outcome, tool use, policy, escalation, retrieval, facts, injection, clarification and performance. LLM judges have a calibration with human labels. |
-| Statistics | Wilson intervals, pass^k reliability, paired comparisons at case level, exact sign tests, Holm correction, the rule of three and power calculations. |
+| Simulated world | Two fictional tenants: *Ledgerloop* (billing SaaS) and *Parcelpoint* (shipping SaaS). Each has a versioned knowledge base with effective dates, business data and APIs. A policy engine is the oracle. |
+| Integration layer | Timeouts, retries, a circuit breaker, a rate limit and **idempotency keys**. A permission guard, a policy monitor, an audit log with a hash chain and fault injection. A REST connector from YAML, and an adapter for external agents. |
+| Models | One client for the OpenAI-compatible protocol, with free presets: **OpenRouter free models**, vLLM and Ollama. **Cassettes** record each model call. A replay costs nothing. |
+| Evaluation | Deterministic evaluators against the oracle, calibrated LLM judges, Wilson intervals, paired comparisons at case level, slices, pass^k and power calculations. |
+| Production monitor | Signals that a live deployment can see, **without an oracle**. An alert needs all of the 95% interval to be more than the tolerance. A sequential detector gives the number of tickets before the alarm. |
+| Diagnosis | A taxonomy of 14 failure classes, clusters and **counterfactual interventions**. A cause is confirmed only when an intervention fixes it. |
+| Releases | Frozen release bundles, gates on confidence limits with an explanation for each gate, an integration suite with faults, shadow mode, approval by a person and rollback. |
+| Improvement loop | Selects a fix on the dev split, validates it on the test split, and stops for approval. |
+| Business value | ROI as a distribution against a person and against a FAQ baseline. Ranked opportunities and a roadmap memo. |
+| Service | FastAPI with API keys and roles, a tenant scope on each request, a job queue in Postgres, Docker and Compose. |
+| Web UI | A static Next.js UI: release log, gates, monitor, comparisons, traces, diagnosis, roadmap and business value. |
 
 ## Start
 
@@ -34,30 +39,35 @@ You must have Python 3.11 (or a subsequent version) and [uv](https://docs.astral
 uv sync
 make check                                   # lint, types, layers, STE docs, tests
 
-uv run fdeops tenant validate tenants/ledgerloop
-uv run fdeops dataset build --tenant tenants/ledgerloop
+# The flagship demo: release, incident, monitor alarm, diagnosis, gated fix, approval, ROI
+uv run fdeops demo --tenant tenants/ledgerloop --export web/public/demo
+uv run fdeops demo --tenant tenants/parcelpoint --export web/public/demo
 
-# A pipeline test with the rule-based model: a stale index, then a correct index
-uv run fdeops run --tenant tenants/ledgerloop --agent configs/agents/ledgerloop-heuristic-stale.yaml \
-  --dataset data/datasets/ledgerloop/support-core@v1 --split test --trials 2
-uv run fdeops run --tenant tenants/ledgerloop --agent configs/agents/ledgerloop-heuristic.yaml \
-  --dataset data/datasets/ledgerloop/support-core@v1 --split test --trials 2
-uv run fdeops compare runs/<stale-run-id> runs/<correct-run-id>
+# The portfolio documents from the demo records
+uv run fdeops portfolio
 ```
 
-To use a real model that is free, do these steps:
-
-1. Get a free OpenRouter key. Select a model ID that ends with `:free`.
-2. Run the agent in record mode. The cassette keeps each model response.
-3. Run the agent again in replay mode. You do not need a key for replay.
+The web UI reads the export. Build it, and open `web/out/index.html` with a static file server:
 
 ```bash
-export OPENROUTER_API_KEY=...
-uv run fdeops run --tenant tenants/ledgerloop --agent configs/agents/ledgerloop-v1.yaml \
-  --model "<free-model-id>" --dataset data/datasets/ledgerloop/support-core@v1 \
-  --llm-mode record --cassettes cassettes/ledgerloop-v1.jsonl
-uv run fdeops run ... --llm-mode replay --cassettes cassettes/ledgerloop-v1.jsonl
+cd web && pnpm install && pnpm build
 ```
+
+These are the commands for each step of the workflow:
+
+| Step | Command |
+|---|---|
+| Evaluate | `fdeops run`, `fdeops compare` |
+| Monitor production | `fdeops monitor REFERENCE_RUN CURRENT_RUN --tenant tenants/ledgerloop` |
+| Find the cause | `fdeops diagnose RUN --tenant ... --dataset ...` |
+| Fix and release | `fdeops improve`, `fdeops release propose`, `fdeops release approve`, `fdeops release rollback` |
+| Business value | `fdeops impact`, `fdeops opportunities` |
+| Regression in CI | `fdeops regress evals/regression.yaml` |
+| Service | `fdeops serve`, `fdeops worker`, `fdeops keys create` |
+
+Real model runs are free with OpenRouter free models or with vLLM on a free Kaggle GPU. Refer to [real model runs](docs/guides/real-model-runs.md).
+
+To deploy the service, use `docker compose up -d --build` on a server, or the Render blueprint in `render.yaml`. CI starts the full Compose stack and runs a job through it.
 
 ## Layout
 
@@ -69,15 +79,30 @@ src/fdeops/
   retrieval/   versioned knowledge base, BM25, hashing embedder, hybrid retriever
   world/       entity state and diffs, cases, datasets, scenario framework
   connectors/  connector interface, resilience, guard, audit, faults, policy monitor
-  packs/       domain packs (billing): entities, APIs, policy, scenarios, rule-based model
+  packs/       domain packs (billing, logistics): entities, APIs, policy, scenarios, rule-based model
   tenancy/     tenant configuration as code
   agent/       reference support agent, prompts, episode runner
   eval/        evaluators, judges, calibration, runner, reports, comparisons, statistics
+  monitor/     production monitor without an oracle: signals, detection, reports
+  diagnose/    failure taxonomy, clusters, counterfactual interventions
+  release/     release bundles, gates, integration suite, registry, shadow mode, memos
+  improve/     the improvement loop
+  impact/      costs, measured outcomes, FAQ baseline, ROI
+  insights/    opportunities and the roadmap memo
+  storage/     database, artifact store, tenant-scoped repository, API keys
+  jobs/        job queue in the database and the worker
+  api/         FastAPI service
+  demo/        the flagship demo, the web export and the portfolio documents
   devtools/    the ASD-STE100 checker for documents
   cli/         the `fdeops` command
-tenants/       one folder for each fictional customer
+tenants/       one folder for each fictional customer (policy, KB, gates, monitors, costs)
+incidents/     incidents as YAML files, for each tenant
 configs/       agent configurations (release candidates)
-docs/          design, plans, glossary, decision records, reports
+evals/         the regression manifest and the cassettes
+web/           the Next.js UI
+docker/        images for the API, the worker and the web UI
+kaggle/        the notebook that records real model runs on a free GPU
+docs/          design, plans, guides, glossary and the portfolio documents
 ```
 
 An import-linter contract makes sure that each layer imports only from the layers below it. CI runs this contract.
@@ -86,20 +111,14 @@ An import-linter contract makes sure that each layer imports only from the layer
 
 All documents use ASD-STE100 Simplified Technical English. The [glossary](docs/glossary.md) gives the technical nouns and technical verbs of this project. Run `uv run fdeops docs check README.md docs` to check a document.
 
-## Roadmap
+## Status
 
-Refer to the [system design](docs/design/2026-10-18-fde-ops-ai-design.md). These are the subsequent milestones:
+Version 2.0 has milestones M0 to M10. Refer to the [changelog](CHANGELOG.md) and the [system design](docs/design/2026-10-18-fde-ops-ai-design.md).
 
-| Milestone | Scope |
-|---|---|
-| M4 | Failure classes, clusters and diagnosis with counterfactual replay |
-| M5 | More resilient integrations and a second tenant (Parcelpoint) |
-| M6 | Release gates and the improvement loop |
-| M7 | API, storage and jobs |
-| M8 | ROI and product insights |
-| M9 | Web UI |
-| M10 | Deployment kit: Docker, CI, Kaggle notebook |
-| M11 and M12 | Real recorded runs and a public demo |
+| Milestone | Scope | Needs |
+|---|---|---|
+| M11 | Real recorded runs and a benchmark with real numbers | A free OpenRouter key or a free Kaggle GPU |
+| M12 | A public demo | A decision by the owner of the repository |
 
 ## License
 

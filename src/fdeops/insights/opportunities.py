@@ -141,7 +141,7 @@ def build_opportunities(
                 evidence=(
                     f"run {diagnosis.run_id}",
                     f"cluster {c.id}: {c.n_trials} trials, {c.n_cases} cases",
-                    *(f"{e.kind} {e.ref}" for e in c.examples[:3]),
+                    *list(dict.fromkeys(f"{e.kind} {e.ref}" for e in c.examples))[:3],
                 ),
                 affected_share=share,
                 affected_tickets_per_month=volume * share,

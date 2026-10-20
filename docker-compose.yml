@@ -30,8 +30,13 @@ services:
     build: {context: ., dockerfile: docker/app.Dockerfile}
     command: ["fdeops", "worker"]
     environment: *app-env
-    # The image health check calls the HTTP API. A worker has no HTTP port.
-    healthcheck: {disable: true}
+    # The image health check calls the HTTP API. A worker has no HTTP port, thus it checks that
+    # the worker process is the main process of the container.
+    healthcheck:
+      test: ["CMD-SHELL", "tr '\\0' ' ' < /proc/1/cmdline | grep -q 'fdeops worker'"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
     volumes: [data:/data]
     deploy: {replicas: 2}
     depends_on:

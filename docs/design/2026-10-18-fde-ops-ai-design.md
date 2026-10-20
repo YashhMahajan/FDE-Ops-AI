@@ -1,6 +1,6 @@
 # FDE-Ops-AI: System Design
 
-*Status: approved. This is a living document. Language: ASD-STE100 (refer to the [glossary](../glossary.md)).*
+*Status: approved. Version 2.0 contains milestones M0 to M10. This is a living document. Language: ASD-STE100 (refer to the [glossary](../glossary.md)).*
 
 ## 1. Intent
 
@@ -115,7 +115,7 @@ The secondary purpose has a lower priority. Developers can connect their own age
 
 Each layer imports only from the layers below it. An import-linter contract in CI makes sure of this:
 
-`core → (llm, trace, retrieval, devtools) → world → connectors → packs → tenancy → agent → eval → diagnose → (improve, release) → (impact, insights) → (storage, api) → cli`
+`core → (llm, trace, retrieval, devtools) → world → connectors → packs → tenancy → agent → eval → (diagnose, monitor) → release → improve → impact → insights → storage → jobs → demo → api → cli`
 
 The core library is **synchronous**. It uses thread pools for parallel trials. This keeps the agent loop and the tests easy to read and easy to debug. The API layer can serve requests at the same time (ADR-0003).
 
@@ -267,6 +267,17 @@ A small explicit workflow, not a framework:
 4. **Intervene.** Replay the cases of the cluster with one change. Possible changes are oracle retrieval, a previous document, prompt or model, a different top-k, or a tool validator. Each intervention reports a fix rate with an interval, and a regression rate on the cases that passed.
 5. **Give a verdict.** Use only these words: `confirmed by intervention`, `supported by evidence` or `inconclusive`.
 
+### 5.9.1 `monitor`: production monitoring without an oracle
+
+Production traffic has no oracle. Thus, the monitor uses only signals that a live deployment can see (ADR-0007). Examples are guardrail flags, superseded knowledge in the context, escalations, tool errors, latency and tokens.
+
+1. **Compare two windows.** A reference window (for example, the release run) and a current window of traffic.
+2. **Test each monitor.** A rate uses the Newcombe interval of the change. A value uses a bootstrap interval of the ratio. An alert occurs only when all of the interval is more than the tolerance in `monitors.yaml`.
+3. **Find the alarm ticket.** A Bernoulli CUSUM in ticket order tells how many tickets go by before the alarm.
+4. **Measure the monitor.** In the simulation, the oracle is known. The report gives the precision and the recall of each signal, the silent failures and a review sample size.
+
+An alert is a symptom, not a cause. The next step is the diagnosis on the dev split.
+
 ### 5.10 `improve`: closed improvement loop
 
 Find → find the cause → **recommend** → **validate** → **release or reject**.
@@ -413,7 +424,8 @@ This matrix connects each requirement of the project brief to the part of the sy
 | Retries, timeouts, rate limits, idempotency | `connectors.resilience` | M2 |
 | Structured logs, errors, audit trail | `connectors.audit`, structured logs in `api` | M2, M7 |
 | Local and container deployment, secrets, access control | Dockerfiles, Compose, settings from the environment | M7, M10 |
-| A path from prototype to a monitored pilot | shadow mode, release gates, monitoring runs | M6 |
+| A path from prototype to a monitored pilot | shadow mode, release gates, the production monitor | M6, 2.0 |
+| Detection of production failures without correct answers | `monitor` (signals that a deployment can see, interval tests, CUSUM, detection quality) | 2.0 |
 | Broken API, missing fields, expired credentials, bad data | `connectors.faults`, data-quality report | M2, M5 |
 | 5. Releases that identify the model, prompt, retrieval, tools and dataset | `release.Release` bundle hash | M6 |
 | Gates: success, no critical regressions, latency, cost, slices, integration tests | `release.gates` | M6 |
@@ -450,6 +462,8 @@ Each milestone ends with tests that pass and a short "what this shows" note in t
 | M10 | Docker, Compose, CI workflows, Kaggle kit, deployment configurations, portfolio documents | Written locally. CI and Kaggle run them. |
 | M11 | Real recorded runs, benchmark report with real numbers | **Yes** (OpenRouter free models or Kaggle GPU) |
 | M12 | Public deployment and demo | **Yes** (GitHub, hosting) |
+
+Status at version 2.0 (2026-10-20): M0 to M10 are complete. The production monitor (section 5.9.1) is also complete. M11 and M12 need the external resources in the table.
 
 ## 10. Test strategy
 
