@@ -114,10 +114,6 @@ def test_viewer_cannot_start_runs_or_approve(env) -> None:  # type: ignore[no-un
     assert r.status_code == 403
 
 
-def test_viewer_cannot_approve(env) -> None:  # type: ignore[no-untyped-def]
-    test_viewer_cannot_start_runs_or_approve(env)
-
-
 def test_bad_run_request_is_422_with_reason(env) -> None:  # type: ignore[no-untyped-def]
     client, keys, _ = env
     r = client.post(

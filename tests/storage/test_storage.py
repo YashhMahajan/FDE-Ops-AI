@@ -90,3 +90,23 @@ def test_keys_are_hashed_and_roles_ordered(db: Database) -> None:
         keys.revoke(record.key_id)
     with db.session() as s:
         assert KeyStore(s).authenticate(secret) is None
+
+
+def test_purge_tenant_deletes_only_that_tenant(db: Database, tmp_path: Path, small_run) -> None:  # type: ignore[no-untyped-def]
+    from fdeops.storage.keys import KeyStore, Role
+    from fdeops.storage.repo import purge_tenant
+
+    store = LocalArtifactStore(tmp_path / "art")
+    with db.session() as s:
+        Repository(s, "ledgerloop", store).save_run(small_run)
+        Repository(s, "ledgerloop", store).audit("sam", "run.saved", small_run.run_id, "")
+        KeyStore(s).create("ledgerloop", "eng", Role.ENGINEER)
+        KeyStore(s).create("parcelpoint", "pp", Role.ENGINEER)
+    with db.session() as s:
+        counts = purge_tenant(s, "ledgerloop", tmp_path / "art")
+    assert counts["runs"] == 1 and counts["trials"] == len(small_run.results)
+    assert counts["api_keys"] == 1 and counts["audit_events"] >= 1 and counts["artifact_files"] >= 1
+    assert not (tmp_path / "art" / "runs" / "ledgerloop").exists()
+    with db.session() as s:
+        assert Repository(s, "ledgerloop", store).list_runs() == []
+        assert KeyStore(s).list("parcelpoint")  # the other tenant keeps its data

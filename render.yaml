@@ -14,7 +14,7 @@ services:
     plan: free
     dockerfilePath: docker/app.Dockerfile
     dockerContext: .
-    healthCheckPath: /health
+    healthCheckPath: /ready
     envVars:
       - key: PORT
         value: "8000"

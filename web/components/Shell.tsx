@@ -84,11 +84,16 @@ function TopBar() {
 export function Shell({ children }: { children: React.ReactNode }) {
   return (
     <TenantProvider>
+      <a className="skip-link" href="#content">
+        Skip to the content
+      </a>
       <div className="shell">
         <Rail />
         <div className="main">
           <TopBar />
-          <main className="page">{children}</main>
+          <main className="page" id="content" tabIndex={-1}>
+            {children}
+          </main>
         </div>
       </div>
     </TenantProvider>

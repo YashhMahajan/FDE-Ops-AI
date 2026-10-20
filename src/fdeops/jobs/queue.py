@@ -10,7 +10,7 @@ from typing import Any
 
 from sqlalchemy import or_, select, update
 
-from fdeops.core.errors import ConfigError
+from fdeops.core.errors import ConfigError, InvariantError
 from fdeops.core.ids import new_id
 from fdeops.core.model import FrozenModel
 from fdeops.storage.db import Database, JobRow, utcnow
@@ -107,14 +107,16 @@ class JobQueue:
     def complete(self, job_id: str, result: dict[str, Any]) -> None:
         with self.db.session() as s:
             row = s.get(JobRow, job_id)
-            assert row is not None
+            if row is None:
+                raise InvariantError("row must be set here")
             row.status, row.result, row.finished_at = "succeeded", result, utcnow()
             row.locked_by = row.locked_until = None
 
     def fail(self, job_id: str, error: str, retry: bool = True) -> None:
         with self.db.session() as s:
             row = s.get(JobRow, job_id)
-            assert row is not None
+            if row is None:
+                raise InvariantError("row must be set here")
             row.error = error
             row.locked_by = row.locked_until = None
             if retry and row.attempts < self.max_attempts:

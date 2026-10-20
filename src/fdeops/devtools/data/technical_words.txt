@@ -235,3 +235,20 @@ diagnosis
 # The dictionary approves ZERO. The parser missed it.
 zero
 partial pooling
+# Operations terms (docs/glossary.md, 2.1)
+backup
+environment variable
+environment variables
+origin
+origins
+port
+process
+reverse proxy
+route
+routes
+runbook
+delete
+purge
+restore
+revoke
+rotate

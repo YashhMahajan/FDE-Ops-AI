@@ -1,3 +1,4 @@
+from fdeops.core.errors import InvariantError
 from fdeops.llm.cassette import CassetteMiss, CassetteStore, request_key
 from fdeops.llm.types import LLMClient, LLMMode, LLMRequest, LLMResponse
 
@@ -23,7 +24,8 @@ class RecordingClient:
                 return hit
             if self.mode == LLMMode.REPLAY:
                 raise CassetteMiss(f"no recorded response for {key} in {self.store.path}")
-        assert self.inner is not None
+        if self.inner is None:
+            raise InvariantError("self.inner must be set here")
         response = self.inner.complete(request)
         if self.mode != LLMMode.LIVE:
             self.store.put(key, request, response)

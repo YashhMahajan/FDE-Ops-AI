@@ -7,6 +7,7 @@ converts at the edges.
 from collections.abc import Iterator
 from contextlib import contextmanager
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 
 from sqlalchemy import JSON, Boolean, DateTime, Float, Integer, String, Text, create_engine
@@ -114,6 +115,11 @@ def normalize_url(url: str) -> str:
     return url
 
 
+MIGRATIONS = Path(__file__).parent / "migrations"
+FIRST_REVISION = "0001"
+MIGRATION_LOCK = 4_242_001
+
+
 class Database:
     def __init__(self, url: str) -> None:
         url = normalize_url(url)
@@ -126,11 +132,39 @@ class Database:
         self._sessions = sessionmaker(self.engine, expire_on_commit=False)
 
     def init(self) -> None:
-        Base.metadata.create_all(self.engine)
+        """Bring the schema to the latest migration. It is safe to call at each start."""
+        self.migrate()
+
+    def migrate(self, revision: str = "head") -> None:
+        """Run the Alembic migrations in ``storage/migrations``.
+
+        On Postgres, an advisory lock makes sure that only one process (API or worker) migrates
+        at a time. A database from before migrations (tables, but no version) gets the stamp of
+        the first revision, because that revision is the same schema.
+        """
+        from alembic import command
+        from alembic.config import Config
+        from sqlalchemy import inspect, text
+
+        cfg = Config()
+        cfg.set_main_option("script_location", str(MIGRATIONS))
+        with self.engine.begin() as conn:
+            if conn.dialect.name == "postgresql":
+                conn.execute(text("SELECT pg_advisory_xact_lock(:k)"), {"k": MIGRATION_LOCK})
+            cfg.attributes["connection"] = conn
+            tables = set(inspect(conn).get_table_names())
+            if "alembic_version" not in tables and "jobs" in tables:
+                command.stamp(cfg, FIRST_REVISION)
+            command.upgrade(cfg, revision)
 
     def reset(self) -> None:
+        """Drop all tables and migrate again. Only for tests: it deletes all data."""
+        from sqlalchemy import text
+
         Base.metadata.drop_all(self.engine)
-        Base.metadata.create_all(self.engine)
+        with self.engine.begin() as conn:
+            conn.execute(text("DROP TABLE IF EXISTS alembic_version"))
+        self.migrate()
 
     @contextmanager
     def session(self) -> Iterator[Session]:

@@ -80,3 +80,23 @@ def test_unknown_kind_fails_without_retry(db: Database) -> None:
     job_id = q.enqueue("ledgerloop", "nope", {})
     Worker(q, {}, name="w").run_once()
     assert q.get(job_id).status == "failed"
+
+
+def test_worker_stops_after_the_current_job(db: Database) -> None:
+    q = JobQueue(db)
+    ids = [q.enqueue("ledgerloop", "slow", {}) for _ in range(3)]
+    stop = threading.Event()
+    seen: list[int] = []
+
+    def slow(_payload: dict) -> dict:  # type: ignore[type-arg]
+        seen.append(1)
+        stop.set()  # a SIGTERM arrives while the first job runs
+        return {"ok": True}
+
+    t = threading.Thread(target=Worker(q, {"slow": slow}, "w").run_forever, args=(0.01, stop))
+    t.start()
+    t.join(timeout=10)
+    assert not t.is_alive()
+    assert len(seen) == 1  # the first job completed, and no new job started
+    assert [q.get(i).status for i in ids].count("succeeded") == 1
+    assert [q.get(i).status for i in ids].count("queued") == 2

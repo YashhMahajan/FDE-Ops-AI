@@ -209,9 +209,10 @@ def test_injected_faults_reported_and_retried(
 def test_tool_results_are_json(tenant: Tenant, cases: list[Case], config: AgentConfig) -> None:
     case = first(cases, "refund_eligible")
     ep = run_episode(case, tenant, config, refund_script(case), trial=0)
-    for m in ep.transcript:
-        if m.role == "tool":
-            json.loads(m.content)
+    tool_messages = [m for m in ep.transcript if m.role == "tool"]
+    assert tool_messages
+    for m in tool_messages:
+        assert isinstance(json.loads(m.content), dict)
 
 
 def test_trials_use_distinct_seeds(tenant: Tenant, cases: list[Case], config: AgentConfig) -> None:

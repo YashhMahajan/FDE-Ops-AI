@@ -84,7 +84,7 @@ def test_compare_detects_injected_regression(
     assert cmp.mcnemar_p < 0.05
     assert cmp.by_scenario["refund_eligible"].mean < 0
     assert set(cmp.holm_p) == set(cmp.by_scenario)
-    assert "Regression" in render_comparison(cmp) or "worse" in render_comparison(cmp)
+    assert "Regression: B is worse than A" in render_comparison(cmp)
 
 
 def test_stale_index_regression_is_localized(

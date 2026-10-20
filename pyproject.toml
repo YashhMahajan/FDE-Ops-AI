@@ -1,6 +1,6 @@
 [project]
 name = "fdeops"
-version = "2.0.0"
+version = "2.1.0"
 description = "FDE-Ops-AI: deploy, evaluate, diagnose, and improve AI agents in real business workflows."
 readme = "README.md"
 license = "MIT"
@@ -23,6 +23,7 @@ server = [
   "uvicorn>=0.30",
   "sqlalchemy>=2.0",
   "psycopg[binary]>=3.2",
+  "alembic>=1.13",
 ]
 
 [project.scripts]
@@ -62,13 +63,21 @@ target-version = "py311"
 src = ["src", "tests"]
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "B", "UP", "SIM", "RUF"]
+select = ["E", "F", "I", "B", "UP", "SIM", "RUF", "S", "BLE"]
 # RUF012: pydantic copies mutable field defaults per instance, so `x: dict = {}` is safe there.
 ignore = ["RUF001", "RUF002", "RUF003", "RUF012"]
 
 [tool.ruff.lint.per-file-ignores]
 # Typer declares CLI options as argument defaults by design.
 "src/fdeops/cli/*" = ["B008"]
+# The simulation uses seeded pseudo-random numbers on purpose: results must be reproducible.
+# No security decision uses them. Secrets and IDs use os.urandom and secrets.
+"src/fdeops/packs/*" = ["S311"]
+"src/fdeops/world/*" = ["S311"]
+"src/fdeops/eval/incidents.py" = ["S311"]
+"src/fdeops/agent/episode.py" = ["S311"]
+# Tests use assert, fixed fake keys and seeded random numbers.
+"tests/*" = ["S101", "S105", "S106", "S108", "S311", "S603", "S607"]
 
 [tool.mypy]
 python_version = "3.11"
@@ -108,3 +117,10 @@ layers = [
   "fdeops.llm | fdeops.trace | fdeops.retrieval | fdeops.devtools",
   "fdeops.core",
 ]
+
+[tool.deptry]
+# psycopg is the Postgres driver of SQLAlchemy: the code names it only in database URLs.
+per_rule_ignores = { DEP002 = ["psycopg"] }
+
+[tool.deptry.package_module_name_map]
+pyyaml = "yaml"

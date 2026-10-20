@@ -442,7 +442,7 @@ def run_external_episode(
             with env.tracer.span(SpanKind.TURN, f"turn {turn}"):
                 try:
                     agent_fn(box)
-                except Exception as e:  # the agent under test can fail; the run must not
+                except Exception as e:  # noqa: BLE001 - the agent under test can fail; the run must not
                     error = f"{type(e).__name__}: {e}"
             tool_calls += box.records
             retrieved += box.retrieved

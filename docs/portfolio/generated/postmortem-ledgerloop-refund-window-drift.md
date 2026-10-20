@@ -32,12 +32,12 @@ The monitor saw 7 of 7 failed trials. 0 failure(s) had no flag.
 | step | event | evidence |
 |---|---|---|
 | 0 | The policy document changes. The index keeps the previous section. | incident `refund-window-drift` |
-| 1 | First alarm: `stale_context` after 1 ticket(s) (about 4 minutes). | run `run_01m5bv1t399hmcv0r0pa529ygs` |
-| 2 | The evaluation measures the regression (-0.101). | runs `run_01m5bv1s8qb66wr68f55nnwqtg` and `run_01m5bv1t399hmcv0r0pa529ygs` |
-| 3 | Diagnosis: `stale_knowledge:refund_outside_window`, confirmed by intervention. | run `run_01m5bv1tee6p53cfsn2t0z25xk` |
-| 4 | The improvement loop proposes `freshness_filter` and stops at `pending_approval`. | proposal `imp_01m5bv1v050srn0z08aeev4fa0` |
-| 5 | A person with the approver role approves v2. | decision `dec_01m5bv1wradyz6sfmbesby3jrq` |
-| 6 | The monitor gives 0 alert(s) for v2. | run `run_01m5bv1wbt7cw35224x5zq3f93` |
+| 1 | First alarm: `stale_context` after 1 ticket(s) (about 4 minutes). | run `run_01m5by54194d9tf81jdeeyvdtq` |
+| 2 | The evaluation measures the regression (-0.101). | runs `run_01m5by53678fc825y3x2bvb2nc` and `run_01m5by54194d9tf81jdeeyvdtq` |
+| 3 | Diagnosis: `stale_knowledge:refund_outside_window`, confirmed by intervention. | run `run_01m5by54cp6694zs5srsqx8esg` |
+| 4 | The improvement loop proposes `freshness_filter` and stops at `pending_approval`. | proposal `imp_01m5by54zacestyh78jk74wehf` |
+| 5 | A person with the approver role approves v2. | decision `dec_01m5by56sfd6ynaa8xbz3sxw1h` |
+| 6 | The monitor gives 0 alert(s) for v2. | run `run_01m5by56cheddqfy38tk5va7fr` |
 
 ## Root cause
 

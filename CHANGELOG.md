@@ -2,6 +2,42 @@
 
 All entries use ASD-STE100. Refer to the [glossary](docs/glossary.md).
 
+## 2.1.0 (2026-10-20)
+
+Production readiness. A review against the usual defects of AI-made code found these items, and this version fixes them.
+
+### Security
+
+- Rate limits for each API key, a lower limit for requests that start work, and a limit on wrong keys for each client address. A limit gives HTTP 429 with `Retry-After`.
+- Input rules: a pattern for tenant IDs, and maximum values for each number and text. Unknown fields are errors. The body size has a limit, and model settings have types.
+- An unexpected error gives "internal error" and a request ID. The log keeps the stack trace. The response shows no internal data.
+- Security headers on the API and on the web server. The web server operates without root rights.
+- The API accepts connections only on `127.0.0.1` by default. Only the container uses `0.0.0.0`.
+- Explicit checks replace `assert` in the code, because `python -O` removes assert statements. The linter has security rules.
+
+### Operations
+
+- Database migrations with Alembic. The service migrates at start with a lock. A test makes sure that the migrations make the same schema as the models.
+- `GET /ready` examines the database and the folders. `GET /metrics` gives Prometheus metrics (admin key).
+- The worker completes its current job before it stops on SIGTERM.
+- Pagination on the lists of runs and audit events.
+- `fdeops db upgrade`, `fdeops db revision` and `fdeops db purge-tenant` (all data of a tenant, for a tenant that stops its contract).
+- The service examines its settings at start and stops with a clear message.
+- A runbook, a configuration reference, a threat model, and a document about data and privacy.
+
+### Supply chain and quality
+
+- Each third-party CI step has a fixed commit hash, and CI has read-only rights.
+- CI checks secrets in the full git history, known vulnerabilities (Python and web), dependency licenses and declared dependencies.
+- A release workflow builds the package, an SBOM and checksums for each version tag.
+- Weekly dependency update requests.
+- The web dependencies use a fixed PostCSS version without known vulnerabilities.
+- Tests that could not fail are exact at this time. A test makes sure that the glossary and the STE allowlist agree.
+- A minimum test coverage of 90%.
+- A CI job runs each command in the README and the guides, and examines each link.
+- The web UI has a page for a missing address, a page for an error, a skip link and accessibility checks (WCAG 2.1 AA) on each page.
+- LICENSE, SECURITY.md, CONTRIBUTING.md and `.env.example`.
+
 ## 2.0.0 (2026-10-20)
 
 Version 2.0 completes milestones M0 to M10. All results have the label `pipeline-test` until real model runs (M11).

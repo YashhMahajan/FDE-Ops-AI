@@ -73,9 +73,8 @@ def test_baseline_impact_and_opportunities(tmp_path: Path) -> None:
     res = r.invoke(app, ["opportunities", str(agent_run), "--tenant", TENANT])
     assert res.exit_code == 0, res.output
     roadmap = (agent_run / "roadmap.md").read_text()
-    assert (
-        "What we build next" in roadmap and "freshness" in roadmap
-    ) or "current_index" in roadmap
+    assert "What we build next" in roadmap
+    assert "`freshness_filter`" in roadmap
 
 
 def test_opportunities_need_diagnosis(tmp_path: Path) -> None:

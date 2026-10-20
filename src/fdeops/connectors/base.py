@@ -5,9 +5,9 @@ parameters. Calls never raise: failures come back as typed ``ToolError``s the ag
 about (retry, ask, escalate) and the evaluator can classify.
 """
 
-import time
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field
+from datetime import datetime
 from enum import StrEnum
 from typing import Any, Literal, Protocol
 
@@ -121,7 +121,9 @@ class InProcessConnector:
                 ToolError.of(ErrorCode.INVALID_ARGUMENT, f"unknown operation {op!r}")
             )
         spec, handler = entry
-        start = time.perf_counter()
+        # The context clock measures the time: the real clock in production, and the fake clock of
+        # the simulation in an evaluation. Thus, a simulated run gives the same numbers each time.
+        start = ctx.clock.now()
         try:
             jsonschema.validate(args, spec.parameters)
         except jsonschema.ValidationError as e:
@@ -134,16 +136,17 @@ class InProcessConnector:
         try:
             data = handler(args, ctx)
         except OpFailure as f:
-            return OpResult.failure(f.error, _elapsed_ms(start))
-        except Exception as e:  # a bug in a handler must not crash the agent loop
+            return OpResult.failure(f.error, _elapsed_ms(ctx, start))
+        except Exception as e:  # noqa: BLE001 - a bug in a handler must not crash the agent loop
             return OpResult.failure(
-                ToolError.of(ErrorCode.INTERNAL, f"{type(e).__name__}: {e}"), _elapsed_ms(start)
+                ToolError.of(ErrorCode.INTERNAL, f"{type(e).__name__}: {e}"),
+                _elapsed_ms(ctx, start),
             )
-        return OpResult(ok=True, data=data, latency_ms=_elapsed_ms(start))
+        return OpResult(ok=True, data=data, latency_ms=_elapsed_ms(ctx, start))
 
 
-def _elapsed_ms(start: float) -> float:
-    return (time.perf_counter() - start) * 1000
+def _elapsed_ms(ctx: OpContext, start: datetime) -> float:
+    return (ctx.clock.now() - start).total_seconds() * 1000
 
 
 class ConnectorRegistry:

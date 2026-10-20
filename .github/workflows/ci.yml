@@ -5,19 +5,27 @@ on:
     branches: [main]
   pull_request:
 
+# The workflow only reads the repository. Each job gets no more rights than this.
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e  # v6
       - run: uv sync --locked
       - run: uv run ruff check src tests
       - run: uv run ruff format --check src tests
       - run: uv run mypy src
       - run: uv run lint-imports
       - name: ASD-STE100 documentation check
-        run: uv run fdeops docs check README.md CHANGELOG.md docs tenants src/fdeops/agent/prompts
+        run: uv run fdeops docs check README.md CHANGELOG.md SECURITY.md CONTRIBUTING.md docs tenants src/fdeops/agent/prompts
 
   test:
     runs-on: ubuntu-latest
@@ -25,14 +33,56 @@ jobs:
       matrix:
         python: ["3.11", "3.12"]
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e  # v6
         with:
           python-version: ${{ matrix.python }}
       - run: uv sync --locked
-      - run: uv run pytest --cov=fdeops --cov-report=term-missing
+      - run: uv run pytest --cov=fdeops --cov-report=term-missing --cov-fail-under=90
       - name: Evaluation regression (cassette replay, no model calls)
         run: uv run fdeops regress evals/regression.yaml --skip-missing
+
+  security:
+    # Supply chain and secrets: known vulnerabilities, unused or missing dependencies, and
+    # secrets in the full git history.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e  # v6
+      - name: Secret scan of the full history (gitleaks)
+        run: |
+          V=8.30.1
+          curl -sSfL -o gl.tgz "https://github.com/gitleaks/gitleaks/releases/download/v$V/gitleaks_${V}_linux_x64.tar.gz"
+          echo "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  gl.tgz" | sha256sum -c -
+          tar -xzf gl.tgz gitleaks
+          ./gitleaks git --redact --no-banner .
+      - name: Python dependencies have no known vulnerabilities (pip-audit)
+        run: |
+          uv export --locked --all-extras --no-dev --no-hashes --no-emit-project > requirements.txt
+          uvx pip-audit==2.9.0 --strict -r requirements.txt
+      - name: Declared dependencies match the imports (deptry)
+        run: uvx deptry==0.23.0 src
+      - name: Licenses of the runtime dependencies
+        run: |
+          uv sync --locked --all-extras
+          uv run python scripts/license_check.py
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1  # v4
+        with:
+          version: 11
+      - name: Web dependencies have no high vulnerabilities (pnpm audit)
+        working-directory: web
+        run: pnpm audit --prod --audit-level high
+
+  docs-truth:
+    # The documents tell the truth: links resolve, named commands exist, runnable commands run.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e  # v6
+      - run: uv sync --locked
+      - run: uv run python scripts/check_docs.py
 
   postgres:
     # The storage, queue and API tests again, on a real Postgres (pgvector image).
@@ -51,8 +101,8 @@ jobs:
     env:
       FDEOPS_TEST_DATABASE_URL: postgresql+psycopg://fdeops:fdeops@localhost:5432/fdeops
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e  # v6
       - run: uv sync --locked
       - run: uv run pytest tests/storage tests/jobs -v
 
@@ -60,17 +110,17 @@ jobs:
     # Build the demo data, the static web UI, and screenshots of each page (a visual check).
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e  # v6
       - run: uv sync --locked
       - name: Flagship demo data for both tenants
         run: |
           uv run fdeops demo --tenant tenants/ledgerloop --out demo-output --export web/public/demo
           uv run fdeops demo --tenant tenants/parcelpoint --out demo-output --export web/public/demo
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1  # v4
         with:
           version: 11
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4
         with:
           node-version: 22
           cache: pnpm
@@ -90,12 +140,12 @@ jobs:
           (cd out && python3 -m http.server 4173 --bind 127.0.0.1 >/dev/null 2>&1 &)
           sleep 2
           pnpm screenshots http://127.0.0.1:4173 screenshots
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
         if: always()
         with:
           name: web-screenshots
           path: web/screenshots
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
         with:
           name: web-static-site
           path: web/out
@@ -104,5 +154,5 @@ jobs:
     # The full stack in Docker: Postgres, the API and two workers process a real job.
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4
       - run: ./scripts/compose_smoke.sh

@@ -8,6 +8,7 @@ judgment, thus the same trial always gets the same label.
 from collections.abc import Callable, Mapping
 
 from fdeops.agent.episode import EpisodeResult
+from fdeops.core.errors import InvariantError
 from fdeops.diagnose.taxonomy import (
     CAUSAL_ORDER,
     DESCRIPTIONS,
@@ -51,7 +52,8 @@ def _injection(tr: TrialResult, knowledge: Knowledge) -> list[Evidence]:
     s = tr.score("injection")
     if not _failed(s):
         return []
-    assert s is not None
+    if s is None:
+        raise InvariantError("s must be set here")
     return [
         Evidence(
             kind="score", ref="injection", detail=f"executed {s.details.get('executed_forbidden')}"
@@ -179,7 +181,8 @@ def _wrong_tool(tr: TrialResult, knowledge: Knowledge) -> list[Evidence]:
     s = tr.score("tool_use")
     if not _failed(s):
         return []
-    assert s is not None
+    if s is None:
+        raise InvariantError("s must be set here")
     return [
         Evidence(
             kind="score",

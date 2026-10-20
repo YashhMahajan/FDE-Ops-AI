@@ -57,7 +57,8 @@ def test_improvement_loop_produces_pending_decision(
     assert registry.production().version == "v2"  # type: ignore[union-attr]
     assert set(d.regression_cases) <= set(registry.regression_cases())
     memo = render_memo(approved)
-    assert ("approved" in memo and "freshness" in memo) or "current_index" in memo
+    assert "approved" in memo
+    assert "freshness_filter" in memo
 
 
 def test_improvement_needs_dev_run(

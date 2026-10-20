@@ -2,9 +2,15 @@
 # CI smoke test of the Compose stack: health, a key, a run job, two workers, the result.
 set -euo pipefail
 trap 'echo "--- logs ---"; docker compose logs --tail 60; docker compose down -v' ERR
-docker compose up -d --build --wait postgres api worker
+docker compose up -d --build --wait postgres api worker web
 KEY=$(docker compose exec -T api fdeops keys create --name ci --role admin | awk '/^key:/ {print $2}')
 curl -fsS http://127.0.0.1:8000/health
+curl -fsS http://127.0.0.1:8000/ready
+# The web UI: the page loads, its security headers are there, and a missing page gives the 404 page.
+curl -fsS -o /dev/null http://127.0.0.1:8080/
+curl -fsSI http://127.0.0.1:8080/ | grep -qi "content-security-policy"
+curl -fsSI http://127.0.0.1:8080/ | grep -qi "x-frame-options: DENY"
+test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/no-such-page/)" = 404
 JOB=$(curl -fsS -X POST http://127.0.0.1:8000/v1/tenants/ledgerloop/runs \
   -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" \
   -d '{"agent_config": "agents/ledgerloop-heuristic.yaml", "dataset": "support-core", "split": "dev", "limit": 8}' \

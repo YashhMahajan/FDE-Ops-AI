@@ -12,6 +12,7 @@ from typing import Any, Literal
 
 from fdeops.connectors.base import Connector, ErrorCode, OpContext, OpResult, OpSpec, ToolError
 from fdeops.core.clock import Clock
+from fdeops.core.errors import InvariantError
 from fdeops.core.ids import stable_id
 from fdeops.core.model import FrozenModel
 
@@ -31,7 +32,8 @@ class CircuitBreaker:
     def __init__(
         self, failure_threshold: int = 5, reset_after_s: float = 30.0, clock: Clock | None = None
     ) -> None:
-        assert clock is not None, "CircuitBreaker needs a clock"
+        if clock is None:
+            raise InvariantError("CircuitBreaker needs a clock")
         self.failure_threshold = failure_threshold
         self.reset_after_s = reset_after_s
         self.clock = clock

@@ -74,8 +74,11 @@ def test_paired_bootstrap_contains_true_shift() -> None:
 
 
 def test_bootstrap_deterministic() -> None:
-    a, b = [0.0, 1.0, 1.0, 0.0], [1.0, 1.0, 0.0, 1.0]
+    a = [((i * 37) % 11) / 10 for i in range(40)]
+    b = [((i * 53) % 13) / 12 for i in range(40)]
     assert paired_bootstrap_diff(a, b, seed=3) == paired_bootstrap_diff(a, b, seed=3)
+    # The seed is used: a different seed gives a different interval.
+    assert paired_bootstrap_diff(a, b, seed=3) != paired_bootstrap_diff(a, b, seed=4)
 
 
 def test_sample_size_and_mde() -> None:

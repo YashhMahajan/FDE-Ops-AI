@@ -74,6 +74,7 @@ def test_generation_deterministic(
     world: BillingState, policy: BillingPolicy, kb: KnowledgeBase
 ) -> None:
     assert build(world, policy, kb) == build(world, policy, kb)
+    assert build(world, policy, kb, seed=4) != build(world, policy, kb)
 
 
 def test_unknown_requester_expects_clarification(

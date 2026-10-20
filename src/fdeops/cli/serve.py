@@ -1,7 +1,9 @@
 """Commands to operate the service. They do not run in tests or on a laptop by default."""
 
 import os
+import signal
 import socket
+import threading
 
 import typer
 
@@ -18,9 +20,60 @@ def _db() -> Database:
 
 @db_app.command("init")
 def db_init() -> None:
-    """Make the tables (the command does nothing to tables that exist)."""
+    """Bring the schema to the latest migration (safe to run again)."""
     _db().init()
     typer.echo("database ready")
+
+
+@db_app.command("upgrade")
+def db_upgrade(revision: str = typer.Argument("head")) -> None:
+    """Run the database migrations up to a revision (default: the latest)."""
+    _db().migrate(revision)
+    typer.echo(f"database at {revision}")
+
+
+@db_app.command("revision")
+def db_revision(message: str = typer.Option(..., "-m", "--message")) -> None:
+    """Make a migration from the changes of the models (for developers)."""
+    import tempfile
+    from pathlib import Path
+
+    from alembic import command
+    from alembic.config import Config
+
+    from fdeops.storage.db import MIGRATIONS
+
+    with tempfile.TemporaryDirectory() as tmp:
+        db = Database(f"sqlite:///{Path(tmp) / 'revision.db'}")
+        db.migrate()
+        cfg = Config()
+        cfg.set_main_option("script_location", str(MIGRATIONS))
+        with db.engine.begin() as conn:
+            cfg.attributes["connection"] = conn
+            script = command.revision(cfg, message=message, autogenerate=True)
+        db.dispose()
+    typer.echo(f"wrote {getattr(script, 'path', script)}. Examine it before you commit it.")
+
+
+@db_app.command("purge-tenant")
+def db_purge_tenant(
+    tenant: str = typer.Argument(..., help="The tenant ID"),
+    confirm: str = typer.Option(..., help="Type the tenant ID again to confirm"),
+) -> None:
+    """Delete all data of a tenant (rows, keys, jobs, artifacts). Take a backup first."""
+    from pathlib import Path
+
+    from fdeops.storage.repo import purge_tenant
+
+    if confirm != tenant:
+        typer.echo("error: --confirm must be the same as the tenant ID", err=True)
+        raise typer.Exit(1)
+    artifacts = Path(os.environ.get("FDEOPS_ARTIFACTS_DIR", "artifacts"))
+    db = _db()
+    with db.session() as s:
+        counts = purge_tenant(s, tenant, artifacts)
+    for name, n in counts.items():
+        typer.echo(f"{name}: {n}")
 
 
 @keys_app.command("create")
@@ -59,7 +112,10 @@ def keys_revoke(key_id: str) -> None:
     typer.echo(f"{key_id} revoked")
 
 
-def serve(host: str = typer.Option("0.0.0.0"), port: int = typer.Option(8000)) -> None:
+def serve(
+    host: str = typer.Option("127.0.0.1", help="Use 0.0.0.0 only in a container"),
+    port: int = typer.Option(8000),
+) -> None:
     """Start the API service (uvicorn). Settings come from FDEOPS_* environment variables."""
     import uvicorn
 
@@ -90,4 +146,12 @@ def worker(
         configs_dir=settings.configs_dir,
     )
     typer.echo(f"{name}: waiting for jobs")
-    Worker(JobQueue(db), handlers(ctx), name=name).run_forever(idle)
+    stop = threading.Event()
+
+    def _stop(signum: int, _frame: object) -> None:
+        typer.echo(f"{name}: signal {signum}, the current job completes, then the worker stops")
+        stop.set()
+
+    signal.signal(signal.SIGTERM, _stop)
+    signal.signal(signal.SIGINT, _stop)
+    Worker(JobQueue(db), handlers(ctx), name=name).run_forever(idle, stop)

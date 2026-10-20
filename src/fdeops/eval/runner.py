@@ -10,7 +10,7 @@ from fdeops.agent.config import AgentConfig
 from fdeops.agent.episode import EpisodeResult, ExternalAgent, run_episode, run_external_episode
 from fdeops.connectors.faults import FaultRule
 from fdeops.core.clock import Clock, SystemClock
-from fdeops.core.errors import ConfigError
+from fdeops.core.errors import ConfigError, InvariantError
 from fdeops.core.hashing import content_hash
 from fdeops.core.ids import new_id
 from fdeops.core.model import FrozenModel
@@ -117,7 +117,8 @@ def run_eval(
                 case, tenant, config, external_agent, trial, faults=faults, retriever=retriever
             )
         else:
-            assert llm is not None
+            if llm is None:
+                raise InvariantError("llm must be set here")
             ep = run_episode(case, tenant, config, llm, trial, faults=faults, retriever=retriever)
         scores = tuple(s for e in evaluators for s in e.evaluate(case, ep, ctx))
         pii = tenant.config.pii

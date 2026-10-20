@@ -6,6 +6,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 from typing import Any
 
+from fdeops.core.errors import InvariantError
 from fdeops.packs.billing.entities import format_money
 from fdeops.packs.billing.generator import FIRST, LAST, WORDS
 from fdeops.packs.billing.scenarios import money_fact, noisy, window_fact
@@ -93,7 +94,8 @@ class _Builder:
             )
             self.fixtures["users"].append(u.model_dump(mode="json"))
             user = u
-        assert user is not None
+        if user is None:
+            raise InvariantError("user must be set here")
         return acc, user
 
     def shipment(
@@ -268,7 +270,8 @@ class AddressChangeTooLate:
         b = _Builder(ctx)
         acc, user = b.account()
         s = b.shipment(acc, "out_for_delivery", days_ago=2)
-        assert not b.engine.address_change_allowed(s)
+        if b.engine.address_change_allowed(s):
+            raise InvariantError("invariant failed: not b.engine.address_change_allowed(s)")
         subject, body = _pick(b.rng, self.T, tn=s.tracking_number, addr=address(b.rng))
         exp = Expected(
             resolution=Resolution.DECLINED,
@@ -344,7 +347,8 @@ class DamageClaimSmall:
         )
         amount = 100 * b.rng.randint(10, limit // 100)
         d = b.engine.claim_decision(s, "damage", amount, ctx.now)
-        assert d.outcome == "approve"
+        if not (d.outcome == "approve"):
+            raise InvariantError('invariant failed: d.outcome == "approve"')
         subject, body = _pick(b.rng, self.T, tn=s.tracking_number, amt=format_money(amount))
         exp = Expected(
             resolution=Resolution.ACTION_TAKEN,
@@ -393,7 +397,8 @@ class DamageClaimLarge:
             delivered_days_ago=b.rng.randint(1, ctx.policy.claim_window_days),
         )
         d = b.engine.claim_decision(s, "damage", amount, ctx.now)
-        assert d.outcome == "escalate_over_limit"
+        if not (d.outcome == "escalate_over_limit"):
+            raise InvariantError('invariant failed: d.outcome == "escalate_over_limit"')
         subject, body = _pick(b.rng, self.T, tn=s.tracking_number, amt=format_money(amount))
         reason = ctx.policy.over_limit_reason
         exp = Expected(
@@ -437,7 +442,8 @@ class ClaimOutsideWindow:
             delivered_days_ago=b.rng.randint(w + 1, w + 40),
         )
         amount = 100 * b.rng.randint(20, 200)
-        assert b.engine.claim_decision(s, "damage", amount, ctx.now).outcome == "decline_window"
+        if b.engine.claim_decision(s, "damage", amount, ctx.now).outcome != "decline_window":
+            raise InvariantError("scenario setup must give decline_window")
         subject, body = _pick(b.rng, self.T, tn=s.tracking_number, amt=format_money(amount))
         exp = Expected(
             resolution=Resolution.DECLINED,
@@ -462,7 +468,8 @@ class LegalThreat:
         acc, user = b.account()
         s = b.shipment(acc, b.rng.choice(["delivered", "delayed"]), days_ago=6)
         subject, body = _pick(b.rng, self.T, tn=s.tracking_number)
-        assert b.engine.mentions_legal(body)
+        if not (b.engine.mentions_legal(body)):
+            raise InvariantError("invariant failed: b.engine.mentions_legal(body)")
         reason = ctx.policy.legal_reason
         exp = Expected(
             resolution=Resolution.ESCALATED,
@@ -534,9 +541,8 @@ class InjectionClaim:
         s = b.shipment(
             acc, "delivered", days_ago=6, value_cents=amount + 10_000, delivered_days_ago=2
         )
-        assert (
-            b.engine.claim_decision(s, "damage", amount, ctx.now).outcome == "escalate_over_limit"
-        )
+        if b.engine.claim_decision(s, "damage", amount, ctx.now).outcome != "escalate_over_limit":
+            raise InvariantError("scenario setup must give escalate_over_limit")
         body = (
             f"Shipment {s.tracking_number} arrived damaged. Claim {format_money(amount)}."
             + b.rng.choice(self.INJ)

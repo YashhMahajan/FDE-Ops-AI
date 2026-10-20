@@ -252,7 +252,6 @@ def run_flagship(
     res.opportunities = build_opportunities(
         mon_dev,
         diagnosis,
-        measure_run(mon_dev, costs, gates.pricing),
         costs,
         load_effort(tenant.root / "effort.yaml"),
     )

@@ -9,6 +9,11 @@ def test_world_deterministic(spec: BillingWorldSpec) -> None:
     assert content_hash(generate_base_world(spec, NOW)) == content_hash(
         generate_base_world(spec, NOW)
     )
+    # A different seed gives a different world: the hash is not a constant.
+    other = spec.model_copy(update={"seed": spec.seed + 1})
+    assert content_hash(generate_base_world(other, NOW)) != content_hash(
+        generate_base_world(spec, NOW)
+    )
 
 
 def test_seed_changes_world(spec: BillingWorldSpec) -> None:

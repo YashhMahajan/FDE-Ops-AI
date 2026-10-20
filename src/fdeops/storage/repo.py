@@ -1,14 +1,25 @@
 """A repository with a tenant scope. Each query filters on the tenant, thus a caller cannot read
 the data of a different tenant, also by a direct ID."""
 
-from sqlalchemy import select
+import shutil
+from pathlib import Path
+
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from fdeops.core.errors import ConfigError, FdeOpsError
 from fdeops.eval.report import render_markdown, summarize
 from fdeops.eval.runner import RunResult
 from fdeops.storage.artifacts import ArtifactStore
-from fdeops.storage.db import AnnotationRow, AuditRow, RunRow, TrialRow, utcnow
+from fdeops.storage.db import (
+    AnnotationRow,
+    ApiKeyRow,
+    AuditRow,
+    JobRow,
+    RunRow,
+    TrialRow,
+    utcnow,
+)
 
 
 class NotFound(FdeOpsError):
@@ -66,12 +77,13 @@ class Repository:
         self.s.flush()
         return row
 
-    def list_runs(self, limit: int = 100) -> list[RunRow]:
+    def list_runs(self, limit: int = 100, offset: int = 0) -> list[RunRow]:
         q = (
             select(RunRow)
             .where(RunRow.tenant_id == self.tenant_id)
-            .order_by(RunRow.started_at.desc())
+            .order_by(RunRow.started_at.desc(), RunRow.run_id)
             .limit(limit)
+            .offset(offset)
         )
         return list(self.s.scalars(q))
 
@@ -145,11 +157,39 @@ class Repository:
         )
         self.s.flush()
 
-    def audit_events(self, limit: int = 200) -> list[AuditRow]:
+    def audit_events(self, limit: int = 200, offset: int = 0) -> list[AuditRow]:
         q = (
             select(AuditRow)
             .where(AuditRow.tenant_id == self.tenant_id)
             .order_by(AuditRow.id.desc())
             .limit(limit)
+            .offset(offset)
         )
         return list(self.s.scalars(q))
+
+
+def purge_tenant(s: Session, tenant_id: str, artifacts_root: Path | None) -> dict[str, int]:
+    """Delete all data of one tenant: rows, API keys, jobs and artifact files.
+
+    Use it when a customer leaves, or when a customer asks for the deletion of its data. The
+    result gives the number of deleted items. It cannot be undone, thus take a backup first.
+    """
+    counts: dict[str, int] = {}
+    for name, table in (
+        ("trials", TrialRow),
+        ("annotations", AnnotationRow),
+        ("runs", RunRow),
+        ("jobs", JobRow),
+        ("api_keys", ApiKeyRow),
+        ("audit_events", AuditRow),
+    ):
+        result = s.execute(delete(table).where(table.tenant_id == tenant_id))
+        counts[name] = int(getattr(result, "rowcount", 0) or 0)
+    files = 0
+    if artifacts_root is not None:
+        folder = (artifacts_root / "runs" / tenant_id).resolve()
+        if folder.is_dir() and artifacts_root.resolve() in folder.parents:
+            files = sum(1 for p in folder.rglob("*") if p.is_file())
+            shutil.rmtree(folder)
+    counts["artifact_files"] = files
+    return counts

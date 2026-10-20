@@ -26,7 +26,7 @@ MODEL=org/model-name:free scripts/record_openrouter.sh
 4. Replay the recording without the key:
 
 ```bash
-uv run fdeops regress evals/regression.yaml
+uv run fdeops regress evals/regression.yaml  # needs a recording
 ```
 
 5. Set `min_success_lower` in `evals/regression.yaml` to the recorded lower limit, minus a small margin.

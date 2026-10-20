@@ -14,11 +14,19 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Annotated, Any
 
-from fastapi import Depends, FastAPI, Header, HTTPException, Request, Response
+from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request, Response
 from fastapi.responses import JSONResponse, PlainTextResponse
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+from sqlalchemy import func, select, text
 
 from fdeops import __version__
+from fdeops.api.security import (
+    API_ONLY_HEADERS,
+    SECURITY_HEADERS,
+    TENANT_ID,
+    Metrics,
+    RateLimiter,
+)
 from fdeops.core.errors import ConfigError, FdeOpsError
 from fdeops.core.ids import new_id
 from fdeops.diagnose.interventions import Diagnosis
@@ -38,7 +46,7 @@ from fdeops.release.memo import render_memo
 from fdeops.release.models import load_gates
 from fdeops.release.registry import ReleaseRegistry
 from fdeops.storage.artifacts import LocalArtifactStore
-from fdeops.storage.db import Database
+from fdeops.storage.db import Database, JobRow
 from fdeops.storage.keys import KeyStore, Principal, Role
 from fdeops.storage.repo import NotFound, Repository
 
@@ -60,6 +68,13 @@ class Settings:
     registry_dir: Path
     configs_dir: Path
     cors_origins: tuple[str, ...] = field(default=())
+    rate_per_minute: float = 120.0
+    """Requests for each API key (or each client address without a key) in one minute."""
+    expensive_per_minute: float = 10.0
+    """Requests that start work (runs, diagnoses, ROI) for each API key in one minute."""
+    auth_failures_per_minute: float = 10.0
+    """Requests with a missing or wrong key, for each client address in one minute."""
+    max_body_bytes: int = 1_000_000
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -71,17 +86,49 @@ class Settings:
             registry_dir=Path(e.get("FDEOPS_REGISTRY_DIR", "releases")),
             configs_dir=Path(e.get("FDEOPS_CONFIGS_DIR", "configs")),
             cors_origins=tuple(o for o in e.get("FDEOPS_CORS_ORIGINS", "").split(",") if o),
+            rate_per_minute=float(e.get("FDEOPS_RATE_PER_MINUTE", "120")),
+            expensive_per_minute=float(e.get("FDEOPS_EXPENSIVE_PER_MINUTE", "10")),
+            auth_failures_per_minute=float(e.get("FDEOPS_AUTH_FAILURES_PER_MINUTE", "10")),
+            max_body_bytes=int(e.get("FDEOPS_MAX_BODY_BYTES", "1000000")),
         )
+
+    def validate(self) -> None:
+        """Stop at start-up with a clear message, not at the first request."""
+        if not self.tenants_dir.is_dir():
+            raise ConfigError("FDEOPS_TENANTS_DIR is not a folder", self.tenants_dir)
+        if not self.configs_dir.is_dir():
+            raise ConfigError("FDEOPS_CONFIGS_DIR is not a folder", self.configs_dir)
+        if "*" in self.cors_origins:
+            raise ConfigError("FDEOPS_CORS_ORIGINS must list origins. '*' is not permitted.")
+        if min(self.rate_per_minute, self.expensive_per_minute, self.max_body_bytes) <= 0:
+            raise ConfigError("rate limits and FDEOPS_MAX_BODY_BYTES must be more than zero")
+
+
+class LLMSettings(BaseModel):
+    """Only the settings that a job can use. An unknown key is an error, not a silent no-op."""
+
+    model_config = ConfigDict(extra="forbid")
+    error_rates: dict[str, float] = Field(default_factory=dict, max_length=20)
+
+    @field_validator("error_rates")
+    @classmethod
+    def _rates(cls, v: dict[str, float]) -> dict[str, float]:
+        if any(not 0.0 <= r <= 1.0 for r in v.values()):
+            raise ValueError("each error rate must be between 0 and 1")
+        return v
 
 
 class RunRequest(BaseModel):
-    agent_config: str = Field(description="Path under configs/, for example agents/x.yaml")
-    dataset: str = "support-core"
+    model_config = ConfigDict(extra="forbid")
+    agent_config: str = Field(
+        max_length=200, description="Path under configs/, for example agents/x.yaml"
+    )
+    dataset: str = Field("support-core", pattern=r"^[a-z0-9][a-z0-9-]{0,62}$")
     split: str = "dev"
     trials: int = Field(1, ge=1, le=10)
-    limit: int | None = Field(None, ge=1)
-    incident: str | None = Field(None, description="Path under incidents/")
-    llm_settings: dict[str, Any] = {}
+    limit: int | None = Field(None, ge=1, le=10_000)
+    incident: str | None = Field(None, max_length=200, description="Path under incidents/")
+    llm_settings: LLMSettings = Field(default_factory=LLMSettings)
 
     @field_validator("agent_config", "incident")
     @classmethod
@@ -99,23 +146,27 @@ class RunRequest(BaseModel):
 
 
 class AnnotationRequest(BaseModel):
-    run_id: str
-    case_id: str
-    trial: int
-    rubric: str
+    model_config = ConfigDict(extra="forbid")
+    run_id: str = Field(max_length=64)
+    case_id: str = Field(max_length=64)
+    trial: int = Field(ge=0, le=100)
+    rubric: str = Field(max_length=64)
     label: bool
 
 
 class ApprovalRequest(BaseModel):
-    comment: str = ""
+    model_config = ConfigDict(extra="forbid")
+    comment: str = Field("", max_length=2000)
 
 
 class RollbackRequest(BaseModel):
-    reason: str
+    model_config = ConfigDict(extra="forbid")
+    reason: str = Field(min_length=1, max_length=2000)
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or Settings.from_env()
+    settings.validate()
     db = Database(settings.database_url)
     db.init()
     artifacts = LocalArtifactStore(settings.artifacts_dir)
@@ -146,12 +197,55 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             allow_headers=["*"],
         )
 
+    metrics = Metrics()
+    limiter = RateLimiter(
+        per_minute=settings.rate_per_minute, burst=max(10, int(settings.rate_per_minute // 4))
+    )
+    expensive = RateLimiter(
+        per_minute=settings.expensive_per_minute,
+        burst=max(2, int(settings.expensive_per_minute // 2)),
+    )
+    auth_failures = RateLimiter(
+        per_minute=settings.auth_failures_per_minute,
+        burst=max(3, int(settings.auth_failures_per_minute // 2)),
+    )
+
+    def client_address(request: Request) -> str:
+        return request.client.host if request.client else "unknown"
+
     @app.middleware("http")
     async def request_log(request: Request, call_next: Callable[..., Any]) -> Response:
         rid = new_id("req")
+        request.state.request_id = rid
         start = time.perf_counter()
-        response: Response = await call_next(request)
+        response: Response
+        if request.method in ("POST", "PUT", "PATCH"):
+            length = request.headers.get("content-length")
+            if length is None and request.headers.get("transfer-encoding"):
+                response = JSONResponse(
+                    status_code=411,
+                    content={"detail": "a Content-Length header is necessary", "request_id": rid},
+                )
+            elif length is not None and (
+                not length.isdigit() or int(length) > settings.max_body_bytes
+            ):
+                response = JSONResponse(
+                    status_code=413,
+                    content={"detail": "the request body is too large", "request_id": rid},
+                )
+            else:
+                response = await _handle(request, call_next, rid)
+        else:
+            response = await _handle(request, call_next, rid)
         response.headers["x-request-id"] = rid
+        for k, v in SECURITY_HEADERS.items():
+            response.headers.setdefault(k, v)
+        if request.url.path.startswith("/v1/"):
+            for k, v in API_ONLY_HEADERS.items():
+                response.headers.setdefault(k, v)
+        route = getattr(request.scope.get("route"), "path", "unmatched")
+        elapsed = time.perf_counter() - start
+        metrics.observe(request.method, route, response.status_code, elapsed)
         log.info(
             "request",
             extra={
@@ -160,12 +254,22 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     "method": request.method,
                     "path": request.url.path,
                     "status": response.status_code,
-                    "ms": round((time.perf_counter() - start) * 1000, 1),
+                    "ms": round(elapsed * 1000, 1),
                     "principal": getattr(request.state, "principal", None),
                 }
             },
         )
         return response
+
+    async def _handle(request: Request, call_next: Callable[..., Any], rid: str) -> Response:
+        try:
+            response: Response = await call_next(request)
+            return response
+        except Exception:  # the client gets a request ID, and the log gets the stack trace
+            log.exception("unhandled error", extra={"fields": {"request_id": rid}})
+            return JSONResponse(
+                status_code=500, content={"detail": "internal error", "request_id": rid}
+            )
 
     @app.exception_handler(FdeOpsError)
     async def fdeops_error(request: Request, exc: FdeOpsError) -> JSONResponse:
@@ -181,18 +285,51 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         secret = x_api_key or (
             authorization.removeprefix("Bearer ").strip() if authorization else None
         )
-        if not secret:
+        address = client_address(request)
+        if not secret or len(secret) > 200:
+            _count_auth_failure(address)
             raise HTTPException(401, "an API key is necessary")
         with db.session() as s:
             p = KeyStore(s).authenticate(secret)
         if p is None:
+            _count_auth_failure(address)
             raise HTTPException(401, "the API key is not valid")
         request.state.principal = p.key_id
+        allowed, wait = limiter.allow(f"key:{p.key_id}")
+        if not allowed:
+            raise HTTPException(
+                429, "too many requests", headers={"Retry-After": str(max(1, int(wait + 0.999)))}
+            )
+        path = request.url.path
+        starts_work = (request.method == "POST" and path.endswith(("/runs", "/diagnose"))) or (
+            path.endswith("/impact")
+        )
+        if starts_work:
+            allowed, wait = expensive.allow(f"key:{p.key_id}")
+            if not allowed:
+                raise HTTPException(
+                    429,
+                    "too many requests that start work",
+                    headers={"Retry-After": str(max(1, int(wait + 0.999)))},
+                )
         return p
+
+    def _count_auth_failure(address: str) -> None:
+        allowed, wait = auth_failures.allow(f"ip:{address}")
+        if not allowed:
+            raise HTTPException(
+                429,
+                "too many requests without a valid key",
+                headers={"Retry-After": str(max(1, int(wait + 0.999)))},
+            )
 
     def guard(minimum: Role) -> Callable[..., Principal]:
         def dep(tenant_id: str, p: Annotated[Principal, Depends(principal)]) -> Principal:
-            if not p.can_access(tenant_id) or not (settings.tenants_dir / tenant_id).is_dir():
+            if (
+                not TENANT_ID.fullmatch(tenant_id)
+                or not p.can_access(tenant_id)
+                or not (settings.tenants_dir / tenant_id).is_dir()
+            ):
                 raise HTTPException(404, "tenant not found")
             if not p.role.allows(minimum):
                 raise HTTPException(403, f"this needs the {minimum.value} role")
@@ -215,7 +352,45 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # ------------------------------------------------------------------ routes
     @app.get("/health")
     def health() -> dict[str, str]:
+        """Liveness: the process answers. It does not examine dependencies."""
         return {"status": "ok", "version": __version__}
+
+    @app.get("/ready")
+    def ready() -> JSONResponse:
+        """Readiness: the database answers and the folders are usable. A load balancer uses it."""
+        checks: dict[str, bool] = {}
+        try:
+            with db.session() as s:
+                s.execute(text("SELECT 1"))
+            checks["database"] = True
+        except Exception:  # noqa: BLE001 - any database error means "not ready"
+            log.warning("readiness: the database does not answer")
+            checks["database"] = False
+        checks["tenants"] = settings.tenants_dir.is_dir()
+        checks["artifacts"] = settings.artifacts_dir.is_dir() and os.access(
+            settings.artifacts_dir, os.W_OK
+        )
+        ok = all(checks.values())
+        return JSONResponse(
+            status_code=200 if ok else 503,
+            content={"status": "ready" if ok else "not ready", "checks": checks},
+        )
+
+    @app.get("/metrics")
+    def metrics_endpoint(p: Annotated[Principal, Depends(principal)]) -> PlainTextResponse:
+        """Prometheus metrics. It needs an admin key, because route names show the API surface."""
+        if p.role != Role.ADMIN:
+            raise HTTPException(403, "this needs the admin role")
+        with db.session() as s:
+            jobs = {
+                status: float(n)
+                for status, n in s.execute(
+                    select(JobRow.status, func.count()).group_by(JobRow.status)
+                )
+            }
+        return PlainTextResponse(
+            metrics.render({"fdeops_jobs": jobs}), media_type="text/plain; version=0.0.4"
+        )
 
     @app.get("/v1/tenants")
     def tenants(p: Annotated[Principal, Depends(principal)]) -> list[dict[str, Any]]:
@@ -269,9 +444,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             raise HTTPException(404, "job not found") from e
 
     @app.get("/v1/tenants/{tenant_id}/runs")
-    def runs(tenant_id: str, p: Viewer) -> list[dict[str, Any]]:
+    def runs(
+        tenant_id: str,
+        p: Viewer,
+        limit: Annotated[int, Query(ge=1, le=500)] = 100,
+        offset: Annotated[int, Query(ge=0, le=100_000)] = 0,
+    ) -> list[dict[str, Any]]:
         with db.session() as s:
-            rows = Repository(s, tenant_id, artifacts).list_runs()
+            rows = Repository(s, tenant_id, artifacts).list_runs(limit=limit, offset=offset)
             return [
                 {
                     "run_id": r.run_id,
@@ -359,7 +539,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             return compare_runs(repo.load_run(a), repo.load_run(b)).model_dump(mode="json")
 
     @app.get("/v1/tenants/{tenant_id}/runs/{run_id}/impact")
-    def run_impact(tenant_id: str, run_id: str, p: Viewer, draws: int = 5000) -> dict[str, Any]:
+    def run_impact(
+        tenant_id: str,
+        run_id: str,
+        p: Viewer,
+        draws: Annotated[int, Query(ge=100, le=20_000)] = 5000,
+    ) -> dict[str, Any]:
         t = ctx.tenant(tenant_id)
         costs = load_costs(t.root / "costs.yaml")
         pricing = load_gates(t.root / "gates.yaml").pricing
@@ -380,7 +565,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         opps = build_opportunities(
             run,
             Diagnosis.model_validate_json(artifacts.get_text(key)),
-            measure_run(run, costs, load_gates(t.root / "gates.yaml").pricing),
             costs,
             load_effort(t.root / "effort.yaml"),
         )
@@ -412,7 +596,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return calibrate(name, auto, human).model_dump(mode="json")
 
     @app.get("/v1/tenants/{tenant_id}/audit")
-    def audit(tenant_id: str, p: Approver) -> list[dict[str, Any]]:
+    def audit(
+        tenant_id: str,
+        p: Approver,
+        limit: Annotated[int, Query(ge=1, le=1000)] = 200,
+        offset: Annotated[int, Query(ge=0, le=1_000_000)] = 0,
+    ) -> list[dict[str, Any]]:
         with db.session() as s:
             return [
                 {
@@ -422,7 +611,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     "detail": e.detail,
                     "at": e.at.isoformat(),
                 }
-                for e in Repository(s, tenant_id, artifacts).audit_events()
+                for e in Repository(s, tenant_id, artifacts).audit_events(
+                    limit=limit, offset=offset
+                )
             ]
 
     def registry(tenant_id: str) -> ReleaseRegistry:

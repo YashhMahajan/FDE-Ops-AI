@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 import yaml
@@ -112,6 +113,7 @@ def test_regress_limit_and_model_override(tmp_path: Path) -> None:
     r = CliRunner()
     rec = r.invoke(app, ["regress", str(m), "--record"])
     assert rec.exit_code == 0, rec.output
-    assert '"model": "rules"' in cassette.read_text() or "rules" in cassette.read_text()
+    records = [json.loads(line) for line in cassette.read_text().splitlines() if line.strip()]
+    assert records and all(r["request"]["model"] == "rules" for r in records)
     replay = r.invoke(app, ["regress", str(m)])
     assert replay.exit_code == 0 and "pass" in replay.output

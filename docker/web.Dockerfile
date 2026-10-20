@@ -14,14 +14,15 @@ RUN uv sync --locked --no-dev \
 FROM node:22-slim AS site
 RUN corepack enable && corepack prepare pnpm@11 --activate
 WORKDIR /web
-COPY web/package.json web/pnpm-lock.yaml ./
+COPY web/package.json web/pnpm-lock.yaml web/pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
 COPY web ./
 COPY --from=demo /demo ./public/demo
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN pnpm build
 
-FROM nginx:1.27-alpine
+FROM nginxinc/nginx-unprivileged:1.27-alpine
 COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=site /web/out /usr/share/nginx/html
-EXPOSE 80
+EXPOSE 8080
+HEALTHCHECK --interval=30s --timeout=3s CMD wget -q -O /dev/null http://127.0.0.1:8080/ || exit 1

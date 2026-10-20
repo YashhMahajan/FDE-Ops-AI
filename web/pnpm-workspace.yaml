@@ -1,0 +1,4 @@
+# pnpm settings (pnpm 10 and later read them here, not from package.json).
+# Next.js pins postcss 8.4.31, which has known advisories. The override uses a fixed version.
+overrides:
+  postcss: ">=8.5.23"

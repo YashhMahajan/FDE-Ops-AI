@@ -1,0 +1,39 @@
+name: release
+
+# When a person pushes a version tag (vX.Y.Z), build the package and a software bill of materials
+# (SBOM), and attach them to the GitHub release. The tag must match the package version.
+on:
+  push:
+    tags: ["v*.*.*"]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # to attach files to the release
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e  # v6
+      - name: The tag matches the package version
+        run: |
+          VERSION=$(python3 -c "import tomllib;print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
+          test "v$VERSION" = "$GITHUB_REF_NAME" || { echo "tag $GITHUB_REF_NAME, version $VERSION"; exit 1; }
+      - run: uv sync --locked
+      - run: uv run pytest -q
+      - name: Package (wheel and source)
+        run: uv build
+      - name: SBOM (CycloneDX) of the runtime dependencies
+        run: |
+          uv export --locked --all-extras --no-dev --no-hashes --no-emit-project > requirements.txt
+          uvx --from cyclonedx-bom==7.1.0 cyclonedx-py requirements requirements.txt --of JSON -o dist/fdeops-sbom.cdx.json
+      - name: Checksums
+        run: cd dist && sha256sum * > SHA256SUMS
+      - name: Attach to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 || gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes-file CHANGELOG.md --verify-tag
+          gh release upload "$GITHUB_REF_NAME" dist/* --clobber

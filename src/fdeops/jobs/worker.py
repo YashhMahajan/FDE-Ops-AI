@@ -1,7 +1,7 @@
 """A worker runs jobs from the queue. Each job kind has a handler function."""
 
 import logging
-import time
+import threading
 from collections.abc import Callable
 from typing import Any
 
@@ -28,14 +28,22 @@ class Worker:
             return True
         try:
             result = handler({**job.payload, "_tenant_id": job.tenant_id, "_job_id": job.id})
-        except Exception as e:  # a job failure must not stop the worker
+        except Exception as e:  # noqa: BLE001 - a job failure must not stop the worker
             log.warning("job %s failed: %s", job.id, e)
             self.queue.fail(job.id, f"{type(e).__name__}: {e}")
             return True
         self.queue.complete(job.id, result)
         return True
 
-    def run_forever(self, idle_s: float = 2.0) -> None:  # pragma: no cover - a loop for deploys
-        while True:
+    def run_forever(self, idle_s: float = 2.0, stop: threading.Event | None = None) -> None:
+        """Run jobs until ``stop`` is set. The current job always completes before the stop.
+
+        A deploy sends SIGTERM. The CLI sets ``stop``, thus the worker does not leave a job
+        half done. If the process stops hard, the lease of the job expires, and a different
+        worker runs it again.
+        """
+        stop = stop or threading.Event()
+        while not stop.is_set():
             if not self.run_once():
-                time.sleep(idle_s)
+                stop.wait(idle_s)
+        log.info("worker %s stopped", self.name)

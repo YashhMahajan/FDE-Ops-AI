@@ -1203,3 +1203,27 @@ details.panel[open] > summary::before {
     }
   }
 }
+
+/* ---------------------------------------------------------------- accessibility */
+
+.skip-link {
+  position: absolute;
+  left: 12px;
+  top: -48px;
+  z-index: 100;
+  padding: 8px 12px;
+  background: var(--ink);
+  color: var(--sheet);
+  border-radius: var(--radius-s);
+  font: 600 13px/1.2 var(--font-display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.skip-link:focus {
+  top: 12px;
+}
+
+main.page:focus {
+  outline: none;
+}

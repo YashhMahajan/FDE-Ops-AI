@@ -45,7 +45,7 @@ def test_cli_diagnose_writes_report(tmp_path: Path) -> None:
     report = (run_dir / "diagnosis.md").read_text()
     assert "stale_knowledge:refund_outside_window" in report
     assert (run_dir / "diagnosis.json").exists()
-    assert "confirmed by intervention" in res.output or "supported by evidence" in res.output
+    assert "confirmed by intervention" in res.output
 
 
 def test_cli_diagnose_refuses_test_split(tmp_path: Path) -> None:

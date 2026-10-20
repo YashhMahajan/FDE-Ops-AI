@@ -1,6 +1,9 @@
 // Visual check in CI: screenshots of each page, for both tenants, in light, dark and mobile.
+// Accessibility check: axe-core (WCAG 2.1 A and AA) on each page of each variant. A serious or
+// critical violation fails the job. The full result goes to screenshots/a11y.json.
 // Usage: node scripts/screenshots.mjs http://127.0.0.1:4173 ./screenshots
-import { mkdirSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
+import AxeBuilder from "@axe-core/playwright";
 import { chromium } from "playwright";
 
 const [base = "http://127.0.0.1:4173", out = "screenshots"] = process.argv.slice(2);
@@ -15,6 +18,7 @@ const variants = [
 
 const browser = await chromium.launch();
 const errors = [];
+const a11y = [];
 for (const v of variants) {
   const ctx = await browser.newContext({ viewport: v.viewport, colorScheme: v.scheme, deviceScaleFactor: 1 });
   await ctx.addInitScript((t) => window.localStorage.setItem("fdeops.tenant", t), v.tenant);
@@ -26,6 +30,13 @@ for (const v of variants) {
     await page.waitForTimeout(700); // let the lamp test and the reveal finish
     const slug = p.replace(/\/$/, "") || "overview";
     await page.screenshot({ path: `${out}/${v.name}-${slug}.png`, fullPage: true });
+    const result = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze();
+    for (const violation of result.violations) {
+      a11y.push({ variant: v.name, page: slug, id: violation.id, impact: violation.impact, help: violation.help, nodes: violation.nodes.slice(0, 3).map((n) => n.target.join(" ")) });
+      if (violation.impact === "serious" || violation.impact === "critical") {
+        errors.push(`${v.name}/${slug}: a11y ${violation.id} (${violation.impact}): ${violation.help} at ${violation.nodes.slice(0, 2).map((n) => n.target.join(" ")).join(", ")}`);
+      }
+    }
     if (p === "traces/") {
       const row = page.locator("tr.row-button").first();
       if (await row.count()) {
@@ -39,6 +50,8 @@ for (const v of variants) {
   await ctx.close();
 }
 await browser.close();
+writeFileSync(`${out}/a11y.json`, JSON.stringify(a11y, null, 2));
+
 if (errors.length) {
   console.error(errors.join("\n"));
   process.exit(1);

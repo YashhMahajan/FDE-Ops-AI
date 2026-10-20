@@ -60,6 +60,14 @@ and 1.12). This glossary is the list of those terms for FDE-Ops-AI. The STE chec
 | trace | The record of all steps in an episode. |
 | trial | One episode of a case. A run can have more than one trial for each case. |
 | world | The simulated data and APIs of a tenant. |
+| backup | A copy of the database or of the files, kept to restore them after a loss. |
+| environment variable | A setting that the operating system gives to the program at start-up. |
+| origin | The scheme, host and port of a web page. The API accepts browser calls only from listed origins. |
+| port | The network number on which a service accepts connections. |
+| process | A program while it operates on a computer. |
+| reverse proxy | A server in front of the API. It accepts the requests and sends them to the API. |
+| route | An address (path) of the API, for example `/v1/tenants`. |
+| runbook | The instructions for the person on duty for the service. |
 
 ## Technical verbs
 
@@ -70,3 +78,4 @@ These verbs are names of software operations:
 - ingest, install, lint, load, log, match, merge, parse, pass, push, query
 - raise, rank, record, refund, render, replay, retrieve, retry, return, run
 - save, score, script, search, seed, store, stream, swap, sync, test, upload, validate
+- delete, purge, restore, revoke, rotate (replace a key with a new key)

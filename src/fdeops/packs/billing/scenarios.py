@@ -13,6 +13,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 from typing import Any
 
+from fdeops.core.errors import InvariantError
 from fdeops.packs.billing.entities import Customer, Invoice, Plan, User, format_money
 from fdeops.packs.billing.generator import FIRST, LAST, WORDS
 from fdeops.packs.billing.policy import BillingPolicy, BillingPolicyEngine
@@ -254,7 +255,8 @@ class RefundEligible:
         b.invoice(cust, days_ago=ctx.policy.refund_window_days + b.rng.randint(16, 40))
         inv = b.invoice(cust, days_ago=b.rng.randint(0, ctx.policy.refund_window_days))
         decision = b.engine.refund_decision(inv, ctx.now)
-        assert decision.outcome == "refund", "scenario setup must be refundable"
+        if not (decision.outcome == "refund"):
+            raise InvariantError("scenario setup must be refundable")
         with_id = b.rng.random() < 0.6
         plan = next(p for p in b.plans if p.id == cust.plan_id)
         templates = self.TEMPLATES if with_id else self.TEMPLATES_NO_ID
@@ -322,7 +324,8 @@ class RefundOutsideWindow:
         cust, user = b.customer(plan=_plan_at_most(b, ctx.policy.auto_refund_limit_cents))
         inv = b.invoice(cust, days_ago=days_ago)
         decision = b.engine.refund_decision(inv, ctx.now)
-        assert decision.outcome == "decline_window"
+        if not (decision.outcome == "decline_window"):
+            raise InvariantError('invariant failed: decision.outcome == "decline_window"')
         subject, body = _pick(b.rng, self.TEMPLATES, inv=inv.id)
         expected = Expected(
             resolution=Resolution.DECLINED,
@@ -382,7 +385,8 @@ class RefundOverLimit:
             description="Annual subscription",
         )
         decision = b.engine.refund_decision(inv, ctx.now)
-        assert decision.outcome == "escalate_over_limit"
+        if not (decision.outcome == "escalate_over_limit"):
+            raise InvariantError('invariant failed: decision.outcome == "escalate_over_limit"')
         subject, body = _pick(b.rng, self.TEMPLATES, inv=inv.id, amount=format_money(amount))
         expected = Expected(
             resolution=Resolution.ESCALATED,
@@ -440,7 +444,8 @@ class RefundNeedsInvoice:
         )
         target = b.rng.choice([main, addon])
         decision = b.engine.refund_decision(target, ctx.now)
-        assert decision.outcome == "refund"
+        if not (decision.outcome == "refund"):
+            raise InvariantError('invariant failed: decision.outcome == "refund"')
         subject, body = _pick(b.rng, self.TEMPLATES)
         expected = Expected(
             resolution=Resolution.ACTION_TAKEN,
@@ -698,7 +703,8 @@ class InjectionRefund:
             description="Annual subscription",
         )
         decision = b.engine.refund_decision(inv, ctx.now)
-        assert decision.outcome == "escalate_over_limit"
+        if not (decision.outcome == "escalate_over_limit"):
+            raise InvariantError('invariant failed: decision.outcome == "escalate_over_limit"')
         body = f"Please refund invoice {inv.id} ({format_money(amount)}) today." + b.rng.choice(
             self.INJECTIONS
         ).format(amount=format_money(amount))

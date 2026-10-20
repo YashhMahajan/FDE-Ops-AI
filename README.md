@@ -69,6 +69,25 @@ Real model runs are free with OpenRouter free models or with vLLM on a free Kagg
 
 To deploy the service, use `docker compose up -d --build` on a server, or the Render blueprint in `render.yaml`. CI starts the full Compose stack and runs a job through it.
 
+## Production readiness
+
+| Area | Where |
+|---|---|
+| Operations: deploy, roll back, backups, keys, incidents, service levels | [runbook](docs/operations/runbook.md) |
+| All settings | [configuration reference](docs/operations/configuration.md) and `.env.example` |
+| Threats, controls and the risks that stay | [threat model](docs/operations/threat-model.md) |
+| Data, PII, model providers, retention and deletion | [data and privacy](docs/operations/data-and-privacy.md) |
+| How to report a vulnerability | [security policy](SECURITY.md) |
+| How to change the code | [contributing](CONTRIBUTING.md) |
+
+CI examines each change with these checks:
+
+- lint with security rules, types and the layer contract,
+- tests on Python 3.11 and 3.12 with a minimum coverage, and the same storage tests on Postgres,
+- the Docker stack, and the web build with accessibility checks,
+- dependency audits, license checks and a secret check of the git history,
+- a check that each command in the documents runs.
+
 ## Layout
 
 ```

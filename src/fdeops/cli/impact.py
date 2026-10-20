@@ -91,7 +91,6 @@ def opportunities(run_dir: Path, tenant: Path = typer.Option(...)) -> None:
         opps = build_opportunities(
             run,
             load_diagnosis(run_dir),
-            measure_run(run, costs, load_gates(t.root / "gates.yaml").pricing),
             costs,
             load_effort(t.root / "effort.yaml"),
         )

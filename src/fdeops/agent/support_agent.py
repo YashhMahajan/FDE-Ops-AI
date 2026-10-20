@@ -14,7 +14,7 @@ from typing import Any
 
 from fdeops.agent.config import AgentConfig
 from fdeops.connectors.base import ConnectorRegistry, ErrorCode, OpContext, OpResult, ToolError
-from fdeops.core.errors import FdeOpsError
+from fdeops.core.errors import FdeOpsError, InvariantError
 from fdeops.core.hashing import canonical_json
 from fdeops.core.model import FrozenModel
 from fdeops.llm.cassette import CassetteMiss
@@ -248,7 +248,8 @@ class SupportAgent:
         op_result = self.registry.call(call.name, call.arguments, ctx)
         if op_result.ok:
             return op_result, {"ok": True, "data": op_result.data}
-        assert op_result.error is not None
+        if op_result.error is None:
+            raise InvariantError("op_result.error must be set here")
         return op_result, {"error": op_result.error.model_dump(mode="json")}
 
 

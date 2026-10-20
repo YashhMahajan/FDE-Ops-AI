@@ -50,7 +50,9 @@ def test_cli_run_end_to_end(tmp_path: Path) -> None:
     assert report.exit_code == 0 and "Provenance" in report.output
     cmp = runner.invoke(app, ["compare", str(runs[0]), str(runs[1])])
     assert cmp.exit_code == 0, cmp.output
-    assert "+0.0" in cmp.output or "0.000" in cmp.output
+    # A replay gives the same outputs as the recording: the difference is exactly zero.
+    assert "Difference (B minus A): +0.000" in cmp.output
+    assert "No difference" in cmp.output
 
 
 def test_cli_replay_without_cassette_fails_cleanly(tmp_path: Path) -> None:

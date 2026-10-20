@@ -12,3 +12,10 @@ class ConfigError(FdeOpsError):
         self.message = message
         self.path = path
         super().__init__(f"{path}: {message}" if path is not None else message)
+
+
+class InvariantError(RuntimeError):
+    """An internal rule of the program is broken: a defect, not a user error.
+
+    The code raises it instead of ``assert``, because ``python -O`` removes assert statements.
+    """

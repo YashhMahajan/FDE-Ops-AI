@@ -21,7 +21,6 @@ from fdeops.diagnose.interventions import Diagnosis, Verdict
 from fdeops.diagnose.taxonomy import DESCRIPTIONS, FailureClass
 from fdeops.eval.runner import RunResult
 from fdeops.impact.costs import CostModel, category_of
-from fdeops.impact.measure import RunMeasure
 
 CONFIDENCE = {Verdict.CONFIRMED: 0.9, Verdict.SUPPORTED: 0.5, Verdict.INCONCLUSIVE: 0.2}
 CRITICAL_CLASSES = {
@@ -92,7 +91,7 @@ class Opportunity(FrozenModel):
 
 
 def build_opportunities(
-    run: RunResult, diagnosis: Diagnosis, measure: RunMeasure, costs: CostModel, effort: EffortModel
+    run: RunResult, diagnosis: Diagnosis, costs: CostModel, effort: EffortModel
 ) -> list[Opportunity]:
     volume = costs.monthly_ticket_volume.likely * costs.adoption_rate.likely
     per_min = costs.staff_cost_per_hour.likely / 60

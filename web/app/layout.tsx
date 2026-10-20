@@ -14,6 +14,8 @@ const plexMono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["400", "500"], var
 export const metadata: Metadata = {
   title: "FDE-Ops-AI — release log",
   description: "Evaluate, diagnose and release AI agents with evidence.",
+  // The demo uses fictional data. Search engines must not show it as real results.
+  robots: { index: false, follow: false },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

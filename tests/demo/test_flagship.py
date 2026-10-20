@@ -42,11 +42,8 @@ def test_flagship_demo_end_to_end(tmp_path: Path) -> None:
         assert check_text(text, rules, name) == [], name
     out = export_demo(res, tmp_path / "web" / "ledgerloop")
     index = json.loads((out / "index.json").read_text())
-    assert (
-        index["provenance"] == ["measured-in-simulation", "pipeline-test"]
-        or index["provenance"] == ["pipeline-test"]
-        or "pipeline-test" in index["provenance"]
-    )
+    # The FAQ baseline uses no model, thus its numbers are measured. The agent runs are not.
+    assert index["provenance"] == ["measured-in-simulation", "pipeline-test"]
     assert len(index["steps"]) == 6 and index["detail_runs"]
     run_id = index["detail_runs"][0]
     assert any((out / "trials" / run_id).iterdir())

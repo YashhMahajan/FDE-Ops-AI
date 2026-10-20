@@ -1,6 +1,6 @@
-.PHONY: check lint types layers docs test fmt
+.PHONY: check lint types layers docs test fmt security docs-truth
 
-DOCS = README.md CHANGELOG.md docs tenants src/fdeops/agent/prompts
+DOCS = README.md CHANGELOG.md SECURITY.md CONTRIBUTING.md docs tenants src/fdeops/agent/prompts
 
 check: lint types layers docs test
 
@@ -24,3 +24,13 @@ test:
 fmt:
 	uv run ruff format src tests
 	uv run ruff check --fix src tests
+
+# Licenses of the runtime dependencies, and known vulnerabilities (needs the network)
+security:
+	uv run python scripts/license_check.py
+	uv export --locked --all-extras --no-dev --no-hashes --no-emit-project > /tmp/fdeops-req.txt
+	uvx pip-audit==2.9.0 --strict -r /tmp/fdeops-req.txt
+
+# Each link, each named command and each runnable command in the documents
+docs-truth:
+	uv run python scripts/check_docs.py
