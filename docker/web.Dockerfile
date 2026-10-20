@@ -21,7 +21,7 @@ COPY --from=demo /demo ./public/demo
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN pnpm build
 
-FROM nginxinc/nginx-unprivileged:1.27-alpine
+FROM nginxinc/nginx-unprivileged:1.29-alpine
 COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=site /web/out /usr/share/nginx/html
 EXPOSE 8080
