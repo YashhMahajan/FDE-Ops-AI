@@ -23,6 +23,7 @@
   --lamp-fail: #cf4a35;
   --lamp-fail-lit: #ff8a70;
   --lamp-off: #3a4a5c;
+  --lamp-off-ink: #8c9db2; /* unlit lamp text: dim, but 4.5:1 on the panel */
   --pass-ink: #0a7360;
   --warn-ink: #8a5a08;
   --fail-ink: #b23a27;
@@ -455,7 +456,7 @@ a {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  color: var(--lamp-off);
+  color: var(--lamp-off-ink);
   text-align: left;
   cursor: pointer;
   font: inherit;
