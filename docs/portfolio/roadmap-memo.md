@@ -6,7 +6,7 @@
 
 We build four items next, in this sequence:
 
-1. Real model runs and a benchmark with real numbers (milestone M11).
+1. Real model runs and a benchmark with real numbers (milestone 11).
 2. A gate that examines the index for superseded sections.
 3. Enforce mode for critical policy rules, for each tenant.
 4. A review queue for tickets without a flag.

@@ -17,7 +17,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 DOCS = [
     ROOT / "README.md",
-    ROOT / "CHANGELOG.md",
     ROOT / "SECURITY.md",
     ROOT / "CONTRIBUTING.md",
     *sorted((ROOT / "docs").rglob("*.md")),

@@ -6,7 +6,9 @@ from fdeops.cli import (
     demo,
     diagnose,
     docs,
+    doctor,
     impact,
+    init,
     monitor,
     portfolio,
     regress,
@@ -38,6 +40,8 @@ app.command("baseline")(impact.baseline)
 app.command("impact")(impact.impact)
 app.command("opportunities")(impact.opportunities)
 app.command("demo")(demo.demo)
+app.command("init")(init.init)
+app.command("doctor")(doctor.doctor)
 app.command("regress")(regress.regress)
 app.command("monitor")(monitor.monitor)
 app.command("portfolio")(portfolio.portfolio)

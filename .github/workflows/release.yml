@@ -35,8 +35,6 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # The release notes are the CHANGELOG section of this version only.
-          awk -v v="${GITHUB_REF_NAME#v}" '/^## /{p = index($0, "## " v " ")==1} p' CHANGELOG.md > notes.md
-          test -s notes.md || { echo "CHANGELOG.md has no section for $GITHUB_REF_NAME"; exit 1; }
-          gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 || gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes-file notes.md --verify-tag
+          # GitHub writes the release notes from the merged pull requests of this version.
+          gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 || gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --generate-notes --verify-tag
           gh release upload "$GITHUB_REF_NAME" dist/* --clobber

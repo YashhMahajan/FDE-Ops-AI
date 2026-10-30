@@ -1,4 +1,4 @@
-# M7: Storage, API, Jobs and Authentication
+# Milestone 7: Storage, API, Jobs and Authentication
 
 *Design: section 5.15.*
 
@@ -6,7 +6,7 @@
 
 ## Global constraints
 
-- All M0 to M6 constraints apply.
+- All milestones 0 to 6 constraints apply.
 - Local tests use SQLite and the FastAPI test client. They do not start a server.
 - The same code operates on Postgres. CI runs the Postgres tests in a service container.
 - The job queue uses the database. On Postgres, a worker claims a job with `FOR UPDATE SKIP LOCKED`. There is no Redis and no Celery.

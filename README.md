@@ -53,10 +53,24 @@ The web UI reads the export. Build it, and open `web/out/index.html` with a stat
 cd web && pnpm install && pnpm build
 ```
 
+## Use it on your own workflow
+
+Make a tenant for your company, and test your own agent against it. You need about 15 minutes for the [quickstart](docs/guides/quickstart.md).
+
+```bash
+uv run fdeops doctor                         # check your machine
+uv run fdeops init tenants/<your-tenant> --pack billing --name "<Your Company>"
+```
+
+Then write the policy and the knowledge base of your company.
+
+Refer to [test your own agent](docs/guides/test-your-own-agent.md) to run your agent in the same tests as the reference agent. The example `careful_refunder.py` reads the policy. On the 51 dev cases of the fictional tenant, it has a success rate of **78.4%** (95% CI 65.4% to 87.5%) and **0** critical violations. The example `naive_refunder.py` does not read the policy. It has **21.6%** (95% CI 12.5% to 34.6%) and **33** trials with a critical violation. The paired difference is +56.9 points (95% CI +43.1 to +70.6), and the careful agent is better in 29 cases and worse in 0 cases.
+
 These are the commands for each step of the workflow:
 
 | Step | Command |
 |---|---|
+| Set up | `fdeops doctor`, `fdeops init`, `fdeops tenant validate`, `fdeops dataset build` |
 | Evaluate | `fdeops run`, `fdeops compare` |
 | Monitor production | `fdeops monitor REFERENCE_RUN CURRENT_RUN --tenant tenants/ledgerloop` |
 | Find the cause | `fdeops diagnose RUN --tenant ... --dataset ...` |
@@ -113,6 +127,7 @@ src/fdeops/
   api/         FastAPI service
   demo/        the flagship demo, the web export and the portfolio documents
   devtools/    the text checker for documents
+  templates/   starter tenant files that `fdeops init` copies
   cli/         the `fdeops` command
 tenants/       one folder for each fictional customer (policy, KB, gates, monitors, costs)
 incidents/     incidents as YAML files, for each tenant
@@ -128,12 +143,12 @@ An import-linter contract makes sure that each layer imports only from the layer
 
 ## Status
 
-Version 2.0 has milestones M0 to M10. Refer to the [changelog](CHANGELOG.md) and the [system design](docs/design/2026-10-18-fde-ops-ai-design.md).
+Version 2.2 has milestones 0 to 10, and the kit to use the platform on your own workflow. Refer to the [release notes](https://github.com/YashhMahajan/FDE-Ops-AI/releases) and the [system design](docs/design/2026-10-18-fde-ops-ai-design.md).
 
 | Milestone | Scope | Needs |
 |---|---|---|
-| M11 | Real recorded runs and a benchmark with real numbers | A free OpenRouter key or a free Kaggle GPU |
-| M12 | A public demo | A decision by the owner of the repository |
+| Milestone 11 | Real recorded runs and a benchmark with real numbers | A free OpenRouter key or a free Kaggle GPU |
+| Milestone 12 | A public demo | A decision by the owner of the repository |
 
 ## License
 

@@ -26,7 +26,7 @@ Send an alert to the person on duty when a target is not met for 15 minutes.
 
 ## 3. Deploy a new version
 
-1. Read the changelog. Find the database migrations of the version.
+1. Read the release notes of the version. Find the database migrations of the version.
 2. Make a backup of the database (section 5).
 3. Run the migrations: `fdeops db upgrade`. The API and the worker also run them at start. A lock makes sure that only one process does it.
 4. Deploy the new images: first the workers, then the API.

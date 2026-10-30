@@ -1,0 +1,8 @@
+# Business rules for {{COMPANY}}. The oracle and the policy monitor use this file.
+address_change_statuses: [label_created, in_transit]
+claim_window_days: 30
+auto_claim_limit_cents: 30000   # claims v2, effective 2026-09-10
+legal_keywords: [lawyer, attorney, legal action, sue, court, chargeback]
+legal_reason: legal_risk
+over_limit_reason: claim_over_limit
+escalation_reasons: [claim_over_limit, legal_risk, other]

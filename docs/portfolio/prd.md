@@ -32,49 +32,49 @@ Each customer has different policies, data and risk tolerance. Thus, a forward d
 | Onboard a new tenant without platform code | Platform files that name a tenant | 0 | 0 (a test examines it) |
 | Show business value honestly | ROI as a distribution against two baselines | 5th, 50th and 95th percentiles | Yes, with labels for measured values and assumptions |
 
-The results come from the [benchmark report](generated/benchmark-report.md) and the [case study](generated/case-study-parcelpoint.md). The current model is a stand-in. Real model results come in milestone M11.
+The results come from the [benchmark report](generated/benchmark-report.md) and the [case study](generated/case-study-parcelpoint.md). The current model is a stand-in. Real model results come in milestone 11.
 
 ## 4. Requirements
 
 ### 4.1 Deployment
 
-- R1. A tenant is a folder of files: policy, knowledge base, gates, monitors, costs and effort. No tenant code is in the platform.
-- R2. Each tool call goes through a permission guard, a policy monitor, retries with backoff, a circuit breaker, a rate limit and a timeout.
-- R3. An operation that changes data occurs one time only, also after a retry. An idempotency key controls this.
-- R4. Each tool call has an audit record in a hash chain.
-- R5. External agents use the same connectors and the same evaluators as the reference agent.
+- A tenant is a folder of files: policy, knowledge base, gates, monitors, costs and effort. No tenant code is in the platform.
+- Each tool call goes through a permission guard, a policy monitor, retries with backoff, a circuit breaker, a rate limit and a timeout.
+- An operation that changes data occurs one time only, also after a retry. An idempotency key controls this.
+- Each tool call has an audit record in a hash chain.
+- External agents use the same connectors and the same evaluators as the reference agent.
 
 ### 4.2 Evaluation
 
-- R6. An oracle calculates the correct result from the policy and the data. An LLM does not write the correct answers.
-- R7. Each rate has a 95% interval. Comparisons are paired at case level.
-- R8. An LLM judge is part of a gate only after a calibration against human labels.
-- R9. The dev split selects fixes. The test split validates them. A guard stops the use of the test split for diagnosis.
+- An oracle calculates the correct result from the policy and the data. An LLM does not write the correct answers.
+- Each rate has a 95% interval. Comparisons are paired at case level.
+- An LLM judge is part of a gate only after a calibration against human labels.
+- The dev split selects fixes. The test split validates them. A guard stops the use of the test split for diagnosis.
 
 ### 4.3 Detection
 
-- R10. The production monitor uses only signals that a live deployment can see.
-- R11. An alert occurs only when all of the 95% interval of the change is more than the tolerance.
-- R12. Each monitor has a severity and an explanation in the tenant file.
-- R13. In the simulation, the platform measures how many failures the monitor sees, and how many failures are silent.
+- The production monitor uses only signals that a live deployment can see.
+- An alert occurs only when all of the 95% interval of the change is more than the tolerance.
+- Each monitor has a severity and an explanation in the tenant file.
+- In the simulation, the platform measures how many failures the monitor sees, and how many failures are silent.
 
 ### 4.4 Diagnosis and improvement
 
-- R14. Each failed trial gets one primary class from a fixed taxonomy.
-- R15. A cause is "confirmed" only when an intervention fixes the cluster and does not break control cases.
-- R16. The improvement loop stops before production. A person with the approver role makes the decision.
+- Each failed trial gets one primary class from a fixed taxonomy.
+- A cause is "confirmed" only when an intervention fixes the cluster and does not break control cases.
+- The improvement loop stops before production. A person with the approver role makes the decision.
 
 ### 4.5 Release
 
-- R17. A release is a frozen bundle with a hash: model, prompt, retrieval, tools, knowledge base, dataset and gates.
-- R18. A gate that the platform cannot measure fails, unless the tenant file accepts it.
-- R19. An approval adds the incident cases to the regression suite. A rollback is one command.
+- A release is a frozen bundle with a hash: model, prompt, retrieval, tools, knowledge base, dataset and gates.
+- A gate that the platform cannot measure fails, unless the tenant file accepts it.
+- An approval adds the incident cases to the regression suite. A rollback is one command.
 
 ### 4.6 Business value
 
-- R20. Each assumption has a low value, a likely value, a high value and a source.
-- R21. ROI uses a Monte Carlo simulation. The report gives percentiles and the probability that the savings are more than zero.
-- R22. One baseline is a person only. The other baseline is a FAQ responder without an LLM.
+- Each assumption has a low value, a likely value, a high value and a source.
+- ROI uses a Monte Carlo simulation. The report gives percentiles and the probability that the savings are more than zero.
+- One baseline is a person only. The other baseline is a FAQ responder without an LLM.
 
 ## 5. Constraints
 
@@ -93,7 +93,7 @@ The results come from the [benchmark report](generated/benchmark-report.md) and 
 
 | risk | effect | mitigation |
 |---|---|---|
-| The simulation is easier than real traffic | Results look better than they are | Provenance labels on each report. Real model runs in M11. Adversarial scenarios. |
+| The simulation is easier than real traffic | Results look better than they are | Provenance labels on each report. Real model runs in milestone 11. Adversarial scenarios. |
 | A free model changes or stops | Recordings do not replay | Cassettes keep each response. The model name is part of the cassette key. |
 | Monitors give too many alerts | The team stops to read them | Interval tests, tolerances in the tenant file, a CUSUM level for each tenant |
 | Silent failures | The monitor cannot see them | The report gives a review sample size for tickets without a flag |

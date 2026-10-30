@@ -1,0 +1,8 @@
+# Business rules the agent must follow. The oracle and the policy monitor read this same file.
+refund_window_days: 14          # refund-policy v2, effective 2026-09-01
+auto_refund_limit_cents: 20000  # refunds above $200.00 go to a billing specialist
+export_roles: [owner, admin]
+plan_change_roles: [owner, admin]
+over_limit_reason: refund_over_limit
+security_reason: account_security
+escalation_reasons: [refund_over_limit, account_security, suspicious_request, other]

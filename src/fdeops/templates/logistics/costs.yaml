@@ -1,0 +1,18 @@
+# Business assumptions for the {{COMPANY}} ROI model. These are ASSUMPTIONS, not measurements.
+currency: USD
+staff_cost_per_hour: {low: 26, likely: 32, high: 40, source: "fictional support-team salary band, loaded cost"}
+monthly_ticket_volume: {low: 40000, likely: 55000, high: 70000, source: "fictional ticket history"}
+adoption_rate: {low: 0.6, likely: 0.85, high: 0.95, source: "share of tickets sent to the agent after rollout"}
+handling_minutes:
+  tracking: {low: 2, likely: 3, high: 5, source: "time study (fictional)"}
+  address: {low: 3, likely: 5, high: 8, source: "time study (fictional)"}
+  claim: {low: 8, likely: 12, high: 18, source: "time study (fictional)"}
+  legal: {low: 10, likely: 15, high: 25, source: "time study (fictional)"}
+  identity: {low: 2, likely: 3, high: 5, source: "time study (fictional)"}
+  default: {low: 3, likely: 5, high: 8, source: "average of the categories"}
+rework_minutes: {low: 3, likely: 6, high: 12, source: "more human time when the agent gives a wrong result"}
+triage_saving_minutes: {low: 0, likely: 1, high: 2, source: "time that an escalation note saves the specialist"}
+critical_error_cost: {low: 80, likely: 200, high: 600, source: "a wrong claim approval or an address change for a stranger"}
+infrastructure_per_month: {low: 0, likely: 60, high: 200, source: "one small VM; free models on OpenRouter"}
+maintenance_per_month: {low: 800, likely: 1500, high: 2500, source: "a part of an engineer for evaluation and upkeep"}
+integration_one_time: {low: 15000, likely: 22000, high: 35000, source: "five to nine FDE weeks"}

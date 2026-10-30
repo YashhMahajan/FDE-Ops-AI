@@ -1,4 +1,4 @@
-# M0 to M3: Work Record
+# Milestones 0 to 3: Work Record
 
 *Status: complete.*
 
@@ -75,7 +75,7 @@ Each decision has the cost if the decision is not correct.
 | 18 | The heuristic model came before its test. Its tests use the `heuristic_model` function of the pack. | Some branches of a test-only module have no test |
 | 22 | Slice intervals use the number of cases when a run has more than one trial. | The intervals are wider than necessary |
 | 22 | Comparisons pair at case level and use an exact sign test. Pairs at trial level gave too much confidence. | Less power with many random trials |
-| 22 | `refund_outside_window` has 40 cases. The test split has seven drift cases. That is not sufficient for a slice result after the Holm correction. The report tells this. | M4 adds comparisons for each tag and a dataset-size calculation |
+| 22 | `refund_outside_window` has 40 cases. The test split has seven drift cases. That is not sufficient for a slice result after the Holm correction. The report tells this. | Milestone 4 adds comparisons for each tag and a dataset-size calculation |
 
 ## Last review
 
@@ -88,4 +88,4 @@ These small items are for a subsequent milestone:
 
 - The drift slice is small in each split.
 - The heuristic model has branches without a test.
-- `run.json` keeps full traces. M7 moves traces to the artifact store.
+- `run.json` keeps full traces. Milestone 7 moves traces to the artifact store.

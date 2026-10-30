@@ -1,4 +1,4 @@
-# M4: Diagnosis Plan
+# Milestone 4: Diagnosis Plan
 
 *Design: section 5.9.*
 
@@ -6,7 +6,7 @@
 
 ## Global constraints
 
-- All M0 to M3 constraints apply.
+- All milestones 0 to 3 constraints apply.
 - The classifier is deterministic. It uses only the trial result, the case and the trace.
 - Interventions use the `dev` split. A run on `test` needs `--allow-test`, and the report shows a warning. Thus, the improvement loop does not tune on the test split.
 - A verdict uses only these words: `confirmed by intervention`, `supported by evidence`, `inconclusive`.
@@ -19,7 +19,7 @@
 | A run on the `test` split | The intervention command stops, unless the operator sets `--allow-test` | `test_interventions_refuse_test_split` |
 | An intervention fixes the cluster but breaks other cases | The result shows the regressions, and the verdict is not "confirmed" | `test_regressions_block_confirmation` |
 | A cluster with one case | The verdict is `inconclusive` | `test_small_cluster_is_inconclusive` |
-| A run file from M3 without LLM settings | The diagnosis loads it and uses default settings | `test_old_run_without_llm_settings_loads` |
+| A run file from milestone 3 without LLM settings | The diagnosis loads it and uses default settings | `test_old_run_without_llm_settings_loads` |
 
 ## Tasks
 
