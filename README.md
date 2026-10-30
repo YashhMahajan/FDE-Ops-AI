@@ -143,7 +143,7 @@ An import-linter contract makes sure that each layer imports only from the layer
 
 ## Status
 
-Version 2.2 has milestones 0 to 10, and the kit to use the platform on your own workflow. Refer to the [changelog](CHANGELOG.md) and the [system design](docs/design/2026-10-18-fde-ops-ai-design.md).
+Version 2.2 has milestones 0 to 10, and the kit to use the platform on your own workflow. Refer to the [release notes](https://github.com/YashhMahajan/FDE-Ops-AI/releases) and the [system design](docs/design/2026-10-18-fde-ops-ai-design.md).
 
 | Milestone | Scope | Needs |
 |---|---|---|

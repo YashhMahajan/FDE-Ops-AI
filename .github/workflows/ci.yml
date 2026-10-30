@@ -25,7 +25,7 @@ jobs:
       - run: uv run mypy src
       - run: uv run lint-imports
       - name: Documentation check
-        run: uv run fdeops docs check README.md CHANGELOG.md SECURITY.md CONTRIBUTING.md docs tenants src/fdeops/agent/prompts
+        run: uv run fdeops docs check README.md SECURITY.md CONTRIBUTING.md docs tenants src/fdeops/agent/prompts
 
   test:
     runs-on: ubuntu-latest

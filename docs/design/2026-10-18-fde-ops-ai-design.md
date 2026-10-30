@@ -444,7 +444,7 @@ This matrix connects each requirement of the project brief to the part of the sy
 
 ## 9. Milestones
 
-Each milestone ends with tests that pass and a short "what this shows" note in the changelog.
+Each milestone ends with tests that pass and a short "what this shows" note in the release notes.
 
 | # | Milestone | External resources |
 |---|---|---|

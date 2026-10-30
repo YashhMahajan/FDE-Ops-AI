@@ -1,6 +1,6 @@
 .PHONY: check lint types layers docs test fmt security docs-truth
 
-DOCS = README.md CHANGELOG.md SECURITY.md CONTRIBUTING.md docs tenants src/fdeops/agent/prompts
+DOCS = README.md SECURITY.md CONTRIBUTING.md docs tenants src/fdeops/agent/prompts
 
 check: lint types layers docs test
 
