@@ -1,4 +1,4 @@
-# M6: Releases, Gates and the Improvement Loop
+# Milestone 6: Releases, Gates and the Improvement Loop
 
 *Design: sections 5.10 and 5.11.*
 
@@ -6,7 +6,7 @@
 
 ## Global constraints
 
-- All M0 to M5 constraints apply.
+- All milestones 0 to 5 constraints apply.
 - A gate uses a confidence limit, not a point estimate.
 - A gate that the platform cannot measure fails, unless the tenant configuration lets it pass and explains why.
 - The improvement loop reads the dev split only. The gate run uses the test split only.

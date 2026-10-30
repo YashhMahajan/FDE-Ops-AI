@@ -1,5 +1,22 @@
 # Changelog
 
+## 2.2.0 (2026-10-30)
+
+Use the platform on your own workflow. Version 2.1 was a platform that engineers could read and run on the fictional tenants. Version 2.2 gives an engineer the steps to make a tenant for a new company and to test an agent of their own.
+
+### New
+
+- `fdeops init DIR --pack billing|logistics --name "Company"` makes a starter tenant: policy, knowledge base, gates, monitors and datasets. The command checks the ID and refuses a folder that has files. It loads the new tenant to make sure that it is correct. It writes an agent configuration when the folder `configs/agents` is there. The starter files are part of the package (`fdeops/templates`), thus the command also operates after `pip install`.
+- `fdeops doctor [--tenant DIR]` checks Python, the service dependencies, the model key, Docker, the data folder and a tenant. It does not print a key.
+- `examples/agents/careful_refunder.py`: an example external agent that reads the refund window from the current knowledge-base section, ignores superseded text, and escalates large refunds. On the 51 dev cases of the fictional tenant Ledgerloop, it moves the success rate from 21.6% (95% CI 12.5% to 34.6%) to 78.4% (95% CI 65.4% to 87.5%). The trials with a critical violation go from 33 to 0. The paired difference is +56.9 points (95% CI +43.1 to +70.6), with 29 cases better and 0 cases worse. The label of these results is `measured-in-simulation`.
+- Guides: a [quickstart](docs/guides/quickstart.md) and [test your own agent](docs/guides/test-your-own-agent.md).
+
+### Tests
+
+- Tests for `init` (the two packs, folder and ID checks, no placeholders left) and `doctor`. The suite has 428 tests.
+- A test makes sure that the starter policy and knowledge base stay equal to the files of the demo tenant of the same pack.
+- A test runs the two example agents and makes sure that the careful agent has no violations and the naive agent does not.
+
 ## 2.1.0 (2026-10-20)
 
 Production readiness. A review against the usual defects of AI-made code found these items, and this version fixes them.
@@ -39,7 +56,7 @@ Production readiness. A review against the usual defects of AI-made code found t
 
 ## 2.0.0 (2026-10-20)
 
-Version 2.0 completes milestones M0 to M10. All results have the label `pipeline-test` until real model runs (M11).
+Version 2.0 completes milestones 0 to 10. All results have the label `pipeline-test` until real model runs (milestone 11).
 
 ### Production monitor without an oracle
 
@@ -51,7 +68,7 @@ Version 2.0 completes milestones M0 to M10. All results have the label `pipeline
 - The flagship demo has a monitor step. In the drift incident, superseded context gives the first alarm after one ticket. The critical flags come after about 50 tickets. After the fix, the monitor gives no alerts.
 - *What this shows:* the platform finds a production failure without the correct answers, and it tells which failures it cannot see.
 
-### M10: Deployment kit and portfolio documents
+### Milestone 10: Deployment kit and portfolio documents
 
 - Docker images for the API, the worker and the web UI. Compose with Postgres (pgvector), the API and two workers. A CI job starts the stack and runs a job through it.
 - `render.yaml` for free Render plans, and a Pages workflow that runs only when a person starts it.
@@ -61,7 +78,7 @@ Version 2.0 completes milestones M0 to M10. All results have the label `pipeline
 - Written portfolio documents: the PRD, eight architecture decision records and the roadmap memo. The [portfolio index](docs/portfolio/README.md) connects each part of the mission to the code and the tests.
 - The flagship incident of each tenant is in `tenant.yaml`. A test makes sure that no platform code names a tenant.
 
-### M9: Web UI
+### Milestone 9: Web UI
 
 - A static Next.js UI that reads the demo export. It needs no backend and no model.
 - Pages: release log, release gates (an annunciator panel), monitor, comparisons (interval charts), traces (a drawer with the transcript, tool calls, spans and scores), diagnosis, roadmap and business value.
@@ -72,7 +89,7 @@ Version 2.0 completes milestones M0 to M10. All results have the label `pipeline
 - `fdeops docs check` examines the text of the documents: the words, sentence length, paragraph length, semicolons and contractions. CI runs it.
 - The glossary gives the technical nouns and technical verbs of the project.
 
-### M8: Business impact and product intelligence
+### Milestone 8: Business impact and product intelligence
 
 - Each tenant has `costs.yaml`. Each value is an assumption with a low value, a likely value, a high value and a source.
 - Measured outcomes for each cost category: automated, correctly escalated, failed and critical.
@@ -82,7 +99,7 @@ Version 2.0 completes milestones M0 to M10. All results have the label `pipeline
 - A roadmap memo with the three best items and the items that we do not build.
 - Commands: `fdeops baseline`, `fdeops impact` and `fdeops opportunities`. API: `/impact` and `/opportunities` for each run.
 
-### M7: Storage, API, jobs and authentication
+### Milestone 7: Storage, API, jobs and authentication
 
 - Database tables for runs, trials, annotations, audit events, API keys and jobs. The same code operates on SQLite (local) and Postgres (CI).
 - An artifact store for run records, reports and diagnosis results. A key cannot go out of the store.
@@ -93,7 +110,7 @@ Version 2.0 completes milestones M0 to M10. All results have the label `pipeline
 - Commands: `fdeops serve`, `fdeops worker`, `fdeops keys` and `fdeops db init`.
 - CI runs the storage and queue tests on Postgres in a service container.
 
-### M6: Releases, gates and the improvement loop
+### Milestone 6: Releases, gates and the improvement loop
 
 - A release is a frozen bundle: the agent configuration, the KB hash, the gate dataset and the gate configuration. Its hash identifies it.
 - Each tenant has `gates.yaml`. Each gate must have an explanation, or the file does not load. Ledgerloop and Parcelpoint have different gates.
@@ -109,7 +126,7 @@ Version 2.0 completes milestones M0 to M10. All results have the label `pipeline
 - New commands: `fdeops release`, `fdeops improve` and `fdeops shadow`. Each decision has a memo.
 - *What this shows:* the full loop from incident to approved fix, with evidence at each step and a person at the last step.
 
-### M5: Integrations and a second tenant
+### Milestone 5: Integrations and a second tenant
 
 - A second fictional tenant, Parcelpoint (shipping SaaS), on the same platform. It has a new logistics pack with 11 scenarios: shipment tracking, late shipments, address changes, claims, legal risk, identity and injection. The policy, the risk tolerance, the scopes and the PII rules are different from Ledgerloop. Parcelpoint has its own drift: the claim limit changed from $500 to $300.
 - Ingest of business data: validation, normalization and reference checks, with a data-quality report. The ingest step isolates bad records and tells the record, the field and the cause. Tenant worlds and case fixtures use it.
@@ -122,7 +139,7 @@ Version 2.0 completes milestones M0 to M10. All results have the label `pipeline
 - A REST connector that a YAML file configures, with field maps, typed HTTP errors, idempotency headers and secrets from the environment.
 - *What this shows:* a new tenant needs configuration and, for a new domain, one pack. Dirty data, outages and injected text give reports, not failures.
 
-### M4: Diagnosis
+### Milestone 4: Diagnosis
 
 - A deterministic classifier gives each failed trial a primary failure class from a fixed taxonomy of 14 classes. A causal sequence selects the class, and each label has evidence (spans, violations, stale chunks, scores).
 - Each domain pack tells which policy rules each KB section controls. Thus, the classifier links a violation to stale knowledge only when the stale section controls the violated rule.
@@ -137,7 +154,7 @@ Version 2.0 completes milestones M0 to M10. All results have the label `pipeline
 - A fix: `content_hash` of datasets and agent configurations was cached. A copy with `model_copy` kept the previous hash. At this time, the code calculates the hash each time.
 - *What this shows:* the platform finds the stale-knowledge cluster of the drift incident, confirms the cause by intervention (7 of 7 cases fixed, 0 of 20 control cases broken), and recommends the freshness filter.
 
-### M3: Evaluation engine
+### Milestone 3: Evaluation engine
 
 - Deterministic evaluators compare each episode with the oracle and with the world-state diff. They measure outcome, tool use, policy, escalation, retrieval, facts, injection, clarification and performance.
 - LLM judges measure groundedness and communication. A judge that does not give a usable answer gives "no verdict". It does not give a pass.
@@ -146,17 +163,17 @@ Version 2.0 completes milestones M0 to M10. All results have the label `pipeline
 - The runner, Markdown reports with a provenance label, run comparison, and the commands `fdeops run`, `fdeops report` and `fdeops compare`.
 - *What this shows:* the platform finds a regression from a stale index, finds the scenario that has the regression, and reports the uncertainty correctly.
 
-### M2: Agent, models and integration layer
+### Milestone 2: Agent, models and integration layer
 
 - A client for the OpenAI-compatible protocol with free presets (OpenRouter, vLLM, Ollama), a wait-and-retry wrapper for HTTP 429, and record and replay cassettes.
 - Traces, and retrieval with BM25, a hashing embedder, hybrid fusion and a freshness filter.
 - Resilient connectors. An operation that changes data occurs only one time, also after a retry. There is also a permission guard, an audit chain, fault injection and a policy monitor.
 - The reference support agent and the episode runner. A rule-based model for pipeline tests.
 
-### M1: Simulated customer world
+### Milestone 1: Simulated customer world
 
 - A versioned knowledge base, the billing domain pack, the policy oracle, 12 scenarios, versioned datasets and the Ledgerloop tenant.
 
-### M0: Foundations
+### Milestone 0: Foundations
 
 - Tools, the CI configuration and the core primitives.

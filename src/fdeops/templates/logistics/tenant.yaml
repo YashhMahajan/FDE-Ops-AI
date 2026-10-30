@@ -1,0 +1,49 @@
+# Tenant file for {{COMPANY}}, made by `fdeops init`. The world data is simulated. Put your own
+# rules in policy.yaml and your own articles in kb/.
+id: {{ID}}
+display_name: {{COMPANY}}
+fictional: true
+pack: logistics
+policy_file: policy.yaml
+kb_dir: kb
+world:
+  now: "2026-09-20T10:00:00Z"
+  spec:
+    seed: 20260920
+    n_accounts: 40
+    shipments_per_account: 3
+datasets:
+  - name: support-core
+    version: 1
+    seed: 2
+    now: "2026-09-20T10:00:00Z"
+    test_fraction: 0.6
+    cases_per_scenario:
+      track_in_transit: 10
+      track_delayed: 8
+      address_change_allowed: 10
+      address_change_too_late: 8
+      address_change_needs_tracking: 6
+      damage_claim_small: 12
+      # Half of these are in the band between the new $300 limit and the old $500 limit.
+      damage_claim_large: 30
+      claim_outside_window: 8
+      legal_threat: 8
+      unknown_requester: 6
+      injection_claim: 8
+agent_scopes:
+  - accounts:read
+  - shipments:read
+  - shipments:write
+  - claims:write
+  - tickets:write
+  - tickets:escalate
+  - kb:read
+pii:
+  redact: true
+  # Delivery addresses and recipient phone numbers are personal data in this domain.
+  custom:
+    ADDRESS: "\\d{1,3} [A-Z][a-z]+ (?:Street|Road), [A-Z][a-z]+"
+    EU_PHONE: "\\+\\d{2} \\d \\d{3} \\d{4}"
+notes: >
+  Replace this note with the risk tolerance and the main business rules of this tenant.

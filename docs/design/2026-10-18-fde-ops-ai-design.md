@@ -1,6 +1,6 @@
 # FDE-Ops-AI: System Design
 
-*Status: approved. Version 2.0 contains milestones M0 to M10. This is a living document.*
+*Status: approved. Version 2.0 contains milestones 0 to 10. This is a living document.*
 
 ## 1. Intent
 
@@ -406,40 +406,40 @@ This matrix connects each requirement of the project brief to the part of the sy
 
 | Requirement in the brief | Where the system satisfies it | Milestone |
 |---|---|---|
-| 1. Evaluation engine: task success, groundedness, retrieval, tool use, policy, safety, reliability, performance | `eval.evaluators`, `eval.judges`, pass^k in `eval.stats` | M3 |
-| Versioned datasets with provenance and train/test separation | `world.dataset` (content hash, dev/test split, split guard) | M1, M6 |
-| Hard, adversarial and realistic edge cases | 12 billing scenarios (injection, drift, permission, clarification) and the logistics pack | M1, M5 |
-| Pairwise comparisons and slices | `eval.compare` (case level, Holm) | M3 |
-| Judge calibration against human labels | `eval.calibration`, annotation command | M3, M7 |
-| Confidence intervals and significance | `eval.stats` | M3 |
-| Regression tests on each change | evaluation regression job with cassette replay in CI | M10 |
-| 2. Traces with context, documents, prompt and model versions, tool calls, decisions, output, feedback, latency, tokens, cost | `trace`, `agent.episode`, `eval.report` | M2, M3 |
-| Failure taxonomy and root-cause workflow | `diagnose` | M4 |
-| Hypotheses, not certainty | verdict words in `diagnose` | M4 |
-| 3. Closed loop: find, find the cause, recommend, validate, release or reject | `improve` with approval records | M6 |
-| 4. Connector architecture: ticketing, knowledge base, business data | `connectors`, `packs` | M2, M5 |
-| Tenant configuration and isolated data | `tenancy`, tenant scope in `storage` | M1, M7 |
-| Authentication and permission-aware tool calls | API keys and roles, `connectors.guard` | M2, M7 |
-| Retries, timeouts, rate limits, idempotency | `connectors.resilience` | M2 |
-| Structured logs, errors, audit trail | `connectors.audit`, structured logs in `api` | M2, M7 |
-| Local and container deployment, secrets, access control | Dockerfiles, Compose, settings from the environment | M7, M10 |
-| A path from prototype to a monitored pilot | shadow mode, release gates, the production monitor | M6, 2.0 |
+| 1. Evaluation engine: task success, groundedness, retrieval, tool use, policy, safety, reliability, performance | `eval.evaluators`, `eval.judges`, pass^k in `eval.stats` | Milestone 3 |
+| Versioned datasets with provenance and train/test separation | `world.dataset` (content hash, dev/test split, split guard) | Milestones 1 and 6 |
+| Hard, adversarial and realistic edge cases | 12 billing scenarios (injection, drift, permission, clarification) and the logistics pack | Milestones 1 and 5 |
+| Pairwise comparisons and slices | `eval.compare` (case level, Holm) | Milestone 3 |
+| Judge calibration against human labels | `eval.calibration`, annotation command | Milestones 3 and 7 |
+| Confidence intervals and significance | `eval.stats` | Milestone 3 |
+| Regression tests on each change | evaluation regression job with cassette replay in CI | Milestone 10 |
+| 2. Traces with context, documents, prompt and model versions, tool calls, decisions, output, feedback, latency, tokens, cost | `trace`, `agent.episode`, `eval.report` | Milestones 2 and 3 |
+| Failure taxonomy and root-cause workflow | `diagnose` | Milestone 4 |
+| Hypotheses, not certainty | verdict words in `diagnose` | Milestone 4 |
+| 3. Closed loop: find, find the cause, recommend, validate, release or reject | `improve` with approval records | Milestone 6 |
+| 4. Connector architecture: ticketing, knowledge base, business data | `connectors`, `packs` | Milestones 2 and 5 |
+| Tenant configuration and isolated data | `tenancy`, tenant scope in `storage` | Milestones 1 and 7 |
+| Authentication and permission-aware tool calls | API keys and roles, `connectors.guard` | Milestones 2 and 7 |
+| Retries, timeouts, rate limits, idempotency | `connectors.resilience` | Milestone 2 |
+| Structured logs, errors, audit trail | `connectors.audit`, structured logs in `api` | Milestones 2 and 7 |
+| Local and container deployment, secrets, access control | Dockerfiles, Compose, settings from the environment | Milestones 7 and 10 |
+| A path from prototype to a monitored pilot | shadow mode, release gates, the production monitor | Milestone 6, 2.0 |
 | Detection of production failures without correct answers | `monitor` (signals that a deployment can see, interval tests, CUSUM, detection quality) | 2.0 |
-| Broken API, missing fields, expired credentials, bad data | `connectors.faults`, data-quality report | M2, M5 |
-| 5. Releases that identify the model, prompt, retrieval, tools and dataset | `release.Release` bundle hash | M6 |
-| Gates: success, no critical regressions, latency, cost, slices, integration tests | `release.gates` | M6 |
-| Configurable gates with explanations | `tenants/*/gates.yaml` | M6 |
-| Rollback, version comparison, decision record | `release` | M6 |
-| 6. Business impact: success, escalation, time for each ticket, cost for each resolution, critical errors, adoption, integration time | `impact` | M8 |
-| ROI against a baseline, measured compared with estimated | `impact` (Monte Carlo, provenance labels) | M8 |
-| 7. Multi-tenant: knowledge, rules, datasets, models, cost and latency limits, escalation, release needs | `tenancy`, Ledgerloop and Parcelpoint | M5 |
-| Two customers with different policies and risk tolerance | Ledgerloop and Parcelpoint | M5 |
-| 8. Product intelligence: ranked opportunities with evidence and confidence | `insights` | M8 |
-| Prioritized roadmap with evidence | roadmap memo generator | M8 |
-| Architecture: web app, API, jobs, evaluation, observability, integrations, optimization, data | sections 4 and 5 | M7 to M10 |
-| PostgreSQL, pgvector, background workers, Docker, CI/CD | `storage`, Postgres queue, Compose, GitHub Actions | M7, M10 |
-| Six portfolio documents | `docs/portfolio/` | M10 to M12 |
-| Demo: regression, diagnosis, fix, release through gates, impact analysis | `fdeops demo` and section 6.2 | M6 to M10 |
+| Broken API, missing fields, expired credentials, bad data | `connectors.faults`, data-quality report | Milestones 2 and 5 |
+| 5. Releases that identify the model, prompt, retrieval, tools and dataset | `release.Release` bundle hash | Milestone 6 |
+| Gates: success, no critical regressions, latency, cost, slices, integration tests | `release.gates` | Milestone 6 |
+| Configurable gates with explanations | `tenants/*/gates.yaml` | Milestone 6 |
+| Rollback, version comparison, decision record | `release` | Milestone 6 |
+| 6. Business impact: success, escalation, time for each ticket, cost for each resolution, critical errors, adoption, integration time | `impact` | Milestone 8 |
+| ROI against a baseline, measured compared with estimated | `impact` (Monte Carlo, provenance labels) | Milestone 8 |
+| 7. Multi-tenant: knowledge, rules, datasets, models, cost and latency limits, escalation, release needs | `tenancy`, Ledgerloop and Parcelpoint | Milestone 5 |
+| Two customers with different policies and risk tolerance | Ledgerloop and Parcelpoint | Milestone 5 |
+| 8. Product intelligence: ranked opportunities with evidence and confidence | `insights` | Milestone 8 |
+| Prioritized roadmap with evidence | roadmap memo generator | Milestone 8 |
+| Architecture: web app, API, jobs, evaluation, observability, integrations, optimization, data | sections 4 and 5 | Milestones 7 to 10 |
+| PostgreSQL, pgvector, background workers, Docker, CI/CD | `storage`, Postgres queue, Compose, GitHub Actions | Milestones 7 and 10 |
+| Six portfolio documents | `docs/portfolio/` | Milestones 10 to 12 |
+| Demo: regression, diagnosis, fix, release through gates, impact analysis | `fdeops demo` and section 6.2 | Milestones 6 to 10 |
 | Do not: many agents, chart-only views, judges without validation, benchmark-only optimization, generic multi-tenancy before the workflow operates, production claims without proof | section 2.3 and the gate rules | all |
 
 ## 9. Milestones
@@ -448,21 +448,21 @@ Each milestone ends with tests that pass and a short "what this shows" note in t
 
 | # | Milestone | External resources |
 |---|---|---|
-| M0 | Repository foundations: tools, CI configuration, core models, hashes, configuration loading | No |
-| M1 | Simulated world: KB, data, APIs, policy engine, oracle, case generator, datasets | No |
-| M2 | LLM layer, retrieval, resilient connectors, reference agent, traces | No |
-| M3 | Evaluation engine: evaluators, runner, statistics, reports | No |
-| M4 | Diagnosis: taxonomy, clusters, counterfactual interventions | No |
-| M5 | Executable incidents, PII redaction, data-quality report, logistics pack and Parcelpoint | No |
-| M6 | Releases, gates, improvement loop, approvals, rollback, shadow mode | No |
-| M7 | Storage (SQLite and Postgres), API, jobs, authentication, tenant scope | No (CI tests Postgres) |
-| M8 | Impact and ROI, insights and opportunities | No |
-| M9 | Web UI and static demo export | No |
-| M10 | Docker, Compose, CI workflows, Kaggle kit, deployment configurations, portfolio documents | Written locally. CI and Kaggle run them. |
-| M11 | Real recorded runs, benchmark report with real numbers | **Yes** (OpenRouter free models or Kaggle GPU) |
-| M12 | Public deployment and demo | **Yes** (GitHub, hosting) |
+| Milestone 0 | Repository foundations: tools, CI configuration, core models, hashes, configuration loading | No |
+| Milestone 1 | Simulated world: KB, data, APIs, policy engine, oracle, case generator, datasets | No |
+| Milestone 2 | LLM layer, retrieval, resilient connectors, reference agent, traces | No |
+| Milestone 3 | Evaluation engine: evaluators, runner, statistics, reports | No |
+| Milestone 4 | Diagnosis: taxonomy, clusters, counterfactual interventions | No |
+| Milestone 5 | Executable incidents, PII redaction, data-quality report, logistics pack and Parcelpoint | No |
+| Milestone 6 | Releases, gates, improvement loop, approvals, rollback, shadow mode | No |
+| Milestone 7 | Storage (SQLite and Postgres), API, jobs, authentication, tenant scope | No (CI tests Postgres) |
+| Milestone 8 | Impact and ROI, insights and opportunities | No |
+| Milestone 9 | Web UI and static demo export | No |
+| Milestone 10 | Docker, Compose, CI workflows, Kaggle kit, deployment configurations, portfolio documents | Written locally. CI and Kaggle run them. |
+| Milestone 11 | Real recorded runs, benchmark report with real numbers | **Yes** (OpenRouter free models or Kaggle GPU) |
+| Milestone 12 | Public deployment and demo | **Yes** (GitHub, hosting) |
 
-Status at version 2.0 (2026-10-20): M0 to M10 are complete. The production monitor (section 5.9.1) is also complete. M11 and M12 need the external resources in the table.
+Status at version 2.0 (2026-10-20): milestones 0 to 10 are complete. The production monitor (section 5.9.1) is also complete. Milestones 11 and 12 need the external resources in the table.
 
 ## 10. Test strategy
 
@@ -476,7 +476,7 @@ Status at version 2.0 (2026-10-20): M0 to M10 are complete. The production monit
 
 | Risk | Mitigation |
 |---|---|
-| Small free models can be weak at tool use | Do a model-selection experiment first (M11). The agent continues after errors. Weak models give useful failure data. Providers are pluggable. |
+| Small free models can be weak at tool use | Do a model-selection experiment first (milestone 11). The agent continues after errors. Weak models give useful failure data. Providers are pluggable. |
 | The simulation is too clean | Incidents, data-quality faults, adversarial templates and a baseline without an LLM. Each report tells its limits. |
 | Free quotas are small | Record one time, replay many times. The power calculator gives the dataset size. |
 | The scope becomes too large | Milestone gates. Reviews check the non-goals. |

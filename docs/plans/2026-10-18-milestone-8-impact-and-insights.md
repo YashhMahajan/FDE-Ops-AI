@@ -1,4 +1,4 @@
-# M8: Business Impact and Product Intelligence
+# Milestone 8: Business Impact and Product Intelligence
 
 *Design: sections 5.12 and 5.13.*
 
@@ -6,7 +6,7 @@
 
 ## Global constraints
 
-- All M0 to M7 constraints apply.
+- All milestones 0 to 7 constraints apply.
 - Each number in an impact report has a label: `measured` (from a run) or `assumption` (from the tenant cost file).
 - Each assumption has a low value, a likely value, a high value and a source.
 - The ROI result is a distribution, not one number. The report gives the 5th, 50th and 95th percentiles and the probability that the savings are more than zero.

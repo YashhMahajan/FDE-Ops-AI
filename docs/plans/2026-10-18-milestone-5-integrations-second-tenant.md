@@ -1,4 +1,4 @@
-# M5: Integrations and a Second Tenant
+# Milestone 5: Integrations and a Second Tenant
 
 *Design: sections 5.2, 5.5 and 5.14.*
 
@@ -6,7 +6,7 @@
 
 ## Global constraints
 
-- All M0 to M4 constraints apply.
+- All milestones 0 to 4 constraints apply.
 - The logistics pack and the billing pack use the same ticket code (`packs/common`).
 - An incident is a YAML file. The run record keeps the full incident specification.
 - PII redaction occurs after the evaluators run, before the platform keeps a trace. Thus, the scores use the real text, and the stored trace does not keep the PII.
