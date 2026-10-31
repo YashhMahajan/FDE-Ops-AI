@@ -1,11 +1,23 @@
 [project]
 name = "fdeops"
-version = "2.2.0"
+version = "2.3.0"
 description = "FDE-Ops-AI: deploy, evaluate, diagnose, and improve AI agents in real business workflows."
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.11"
 authors = [{ name = "Yashh Mahajan" }]
+keywords = ["llm", "agents", "evaluation", "observability", "forward-deployed-engineering", "mlops", "root-cause-analysis", "release-gates"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Software Development :: Quality Assurance",
+  "Topic :: Software Development :: Testing",
+  "Typing :: Typed",
+]
 dependencies = [
   "pydantic>=2.7",
   "pyyaml>=6.0",
@@ -25,6 +37,12 @@ server = [
   "psycopg[binary]>=3.2",
   "alembic>=1.13",
 ]
+
+[project.urls]
+Homepage = "https://github.com/YashhMahajan/FDE-Ops-AI"
+Documentation = "https://github.com/YashhMahajan/FDE-Ops-AI/tree/main/docs"
+Issues = "https://github.com/YashhMahajan/FDE-Ops-AI/issues"
+Security = "https://github.com/YashhMahajan/FDE-Ops-AI/security/policy"
 
 [project.scripts]
 fdeops = "fdeops.cli.main:app"

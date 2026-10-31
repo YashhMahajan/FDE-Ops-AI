@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # CI smoke test of the Compose stack: health, a key, a run job, two workers, the result.
 set -euo pipefail
+# Compose has no default password. The test uses a random one for this run only.
+export POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-$(python3 -c 'import secrets; print(secrets.token_hex(24))')}"
 trap 'echo "--- logs ---"; docker compose logs --tail 60; docker compose down -v' ERR
 docker compose up -d --build --wait postgres api worker web
 KEY=$(docker compose exec -T api fdeops keys create --name ci --role admin | awk '/^key:/ {print $2}')

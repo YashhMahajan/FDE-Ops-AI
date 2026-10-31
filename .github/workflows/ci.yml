@@ -16,6 +16,7 @@ concurrency:
 jobs:
   lint:
     runs-on: ubuntu-latest
+    timeout-minutes: 10  # a hung step must not run for hours
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4
       - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e  # v6
@@ -25,10 +26,11 @@ jobs:
       - run: uv run mypy src
       - run: uv run lint-imports
       - name: Documentation check
-        run: uv run fdeops docs check README.md SECURITY.md CONTRIBUTING.md docs tenants src/fdeops/agent/prompts
+        run: uv run fdeops docs check README.md SECURITY.md CONTRIBUTING.md CODE_OF_CONDUCT.md docs tenants src/fdeops/agent/prompts
 
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 30  # a hung step must not run for hours
     strategy:
       matrix:
         python: ["3.11", "3.12"]
@@ -46,6 +48,7 @@ jobs:
     # Supply chain and secrets: known vulnerabilities, unused or missing dependencies, and
     # secrets in the full git history.
     runs-on: ubuntu-latest
+    timeout-minutes: 15  # a hung step must not run for hours
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4
         with:
@@ -78,6 +81,7 @@ jobs:
   docs-truth:
     # The documents tell the truth: links resolve, named commands exist, runnable commands run.
     runs-on: ubuntu-latest
+    timeout-minutes: 20  # a hung step must not run for hours
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4
       - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e  # v6
@@ -87,6 +91,7 @@ jobs:
   postgres:
     # The storage, queue and API tests again, on a real Postgres (pgvector image).
     runs-on: ubuntu-latest
+    timeout-minutes: 15  # a hung step must not run for hours
     services:
       postgres:
         image: pgvector/pgvector:pg16
@@ -109,6 +114,7 @@ jobs:
   web:
     # Build the demo data, the static web UI, and screenshots of each page (a visual check).
     runs-on: ubuntu-latest
+    timeout-minutes: 20  # a hung step must not run for hours
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4
       - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e  # v6
@@ -153,6 +159,40 @@ jobs:
   compose:
     # The full stack in Docker: Postgres, the API and two workers process a real job.
     runs-on: ubuntu-latest
+    timeout-minutes: 25  # a hung step must not run for hours
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4
       - run: ./scripts/compose_smoke.sh
+
+  package:
+    # The wheel that a user installs must work in a clean environment with no extras. The test
+    # job cannot see this: it installs every extra and runs from the source tree.
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e  # v6
+      - run: uv build
+      - name: Install the wheel into a clean environment (no extras)
+        run: |
+          uv venv /tmp/clean
+          uv pip install --python /tmp/clean/bin/python dist/*.whl
+      - name: The base commands work, and the starter templates are in the wheel
+        run: |
+          cd "$(mktemp -d)"
+          /tmp/clean/bin/fdeops version
+          /tmp/clean/bin/fdeops doctor
+          /tmp/clean/bin/fdeops init tenants/acme --pack billing --name "Acme Billing"
+          /tmp/clean/bin/fdeops tenant validate tenants/acme
+          /tmp/clean/bin/fdeops init tenants/ship --pack logistics --name "Ship Co"
+          /tmp/clean/bin/fdeops tenant validate tenants/ship
+      - name: A service command without the server extra gives a clear message
+        run: |
+          if /tmp/clean/bin/fdeops serve 2>err.txt; then echo "serve must fail"; exit 1; fi
+          grep -q "fdeops\[server\]" err.txt
+      - name: Install with the server extra, and the service starts
+        run: |
+          uv venv /tmp/full
+          uv pip install --python /tmp/full/bin/python "$(ls dist/*.whl)[server]"
+          cd "$(mktemp -d)" && /tmp/full/bin/fdeops keys list
+

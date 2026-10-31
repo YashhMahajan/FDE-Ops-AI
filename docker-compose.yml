@@ -1,13 +1,17 @@
 # The full stack: Postgres (pgvector), the API, two workers and the web UI.
 # Run it on a server or in CI. The author does not run it on a laptop.
+#   export POSTGRES_PASSWORD=$(openssl rand -hex 24)   # no default: Compose refuses to start without it
 #   docker compose up -d --build
 #   docker compose exec api fdeops keys create --name admin --role admin
+#
+# The API and the web UI listen on 127.0.0.1 only. Put a reverse proxy with TLS in front of them,
+# or set FDEOPS_BIND=0.0.0.0 when you know that the network is closed.
 services:
   postgres:
     image: pgvector/pgvector:pg16
     environment:
       POSTGRES_USER: fdeops
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fdeops}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD, there is no default}
       POSTGRES_DB: fdeops
     volumes: [pgdata:/var/lib/postgresql/data]
     healthcheck:
@@ -18,11 +22,19 @@ services:
   api:
     build: {context: ., dockerfile: docker/app.Dockerfile}
     environment: &app-env
-      FDEOPS_DATABASE_URL: postgresql+psycopg://fdeops:${POSTGRES_PASSWORD:-fdeops}@postgres:5432/fdeops
+      FDEOPS_DATABASE_URL: postgresql+psycopg://fdeops:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}@postgres:5432/fdeops
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
       FDEOPS_CORS_ORIGINS: ${FDEOPS_CORS_ORIGINS:-}
     volumes: [data:/data]
-    ports: ["8000:8000"]
+    ports: ["${FDEOPS_BIND:-127.0.0.1}:8000:8000"]
+    <<: &hardening
+      # A compromised process cannot gain rights, has no capabilities, and cannot write to the image.
+      security_opt: ["no-new-privileges:true"]
+      cap_drop: [ALL]
+      read_only: true
+      tmpfs: [/tmp]
+    mem_limit: 1g
+    pids_limit: 256
     depends_on:
       postgres: {condition: service_healthy}
 
@@ -39,12 +51,18 @@ services:
       retries: 3
     volumes: [data:/data]
     deploy: {replicas: 2}
+    <<: *hardening
+    mem_limit: 2g
+    pids_limit: 256
     depends_on:
       postgres: {condition: service_healthy}
 
   web:
     build: {context: ., dockerfile: docker/web.Dockerfile}
-    ports: ["8080:8080"]
+    ports: ["${FDEOPS_BIND:-127.0.0.1}:8080:8080"]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    mem_limit: 256m
 
 volumes:
   pgdata:
