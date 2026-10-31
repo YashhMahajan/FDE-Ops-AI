@@ -110,3 +110,19 @@ def test_purge_tenant_deletes_only_that_tenant(db: Database, tmp_path: Path, sma
     with db.session() as s:
         assert Repository(s, "ledgerloop", store).list_runs() == []
         assert KeyStore(s).list("parcelpoint")  # the other tenant keeps its data
+
+
+def test_the_engine_tests_connections_before_use_and_recycles_them(tmp_path: Path) -> None:
+    db = Database(f"sqlite:///{tmp_path / 'p.db'}")
+    assert db.engine.pool._pre_ping is True  # type: ignore[attr-defined]
+    assert db.engine.pool._recycle == 1800  # type: ignore[attr-defined]
+    db.dispose()
+
+
+def test_a_sqlite_file_uses_wal_so_that_a_writer_does_not_block_readers(tmp_path: Path) -> None:
+    from sqlalchemy import text
+
+    db = Database(f"sqlite:///{tmp_path / 'w.db'}")
+    with db.session() as s:
+        assert s.execute(text("PRAGMA journal_mode")).scalar() == "wal"
+    db.dispose()

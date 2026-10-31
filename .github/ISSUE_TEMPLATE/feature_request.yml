@@ -1,0 +1,15 @@
+name: Feature request
+description: A change that makes the platform better for your workflow
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What can you not do now? Give a real example from your workflow.
+    validations: {required: true}
+  - type: textarea
+    id: idea
+    attributes:
+      label: Your idea
+      description: What should the platform do? How will you measure that it works?

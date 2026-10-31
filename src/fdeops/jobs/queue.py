@@ -1,8 +1,11 @@
 """A job queue in the database. No Redis and no Celery: one less service to run (ADR-0004).
 
 A worker claims a job with a lease. On Postgres, the claim uses ``FOR UPDATE SKIP LOCKED``, thus
-two workers never get the same job. On SQLite, the database lock gives the same result. When a
-worker stops, its lease expires and a different worker gets the job.
+two workers never get the same job. On SQLite, the database lock gives the same result.
+
+A worker that runs a job extends its lease with a heartbeat. When a worker stops, the heartbeat
+stops, the lease expires, and a different worker gets the job. Only the holder of the lease can
+save a result, thus a stale worker cannot overwrite the result of the new one.
 """
 
 from datetime import timedelta
@@ -14,6 +17,9 @@ from fdeops.core.errors import ConfigError, InvariantError
 from fdeops.core.ids import new_id
 from fdeops.core.model import FrozenModel
 from fdeops.storage.db import Database, JobRow, utcnow
+
+MAX_ERROR_CHARS = 2_000
+"""An error text can come from a model or a service. The database keeps a short part of it."""
 
 
 class Job(FrozenModel):
@@ -104,22 +110,44 @@ class JobQueue:
             s.refresh(row)
             return _job(row)
 
-    def complete(self, job_id: str, result: dict[str, Any]) -> None:
+    def heartbeat(self, job_id: str, worker: str) -> bool:
+        """Extend the lease of a job that the worker still holds. False means the lease is lost."""
+        with self.db.session() as s:
+            res = s.execute(
+                update(JobRow)
+                .where(JobRow.id == job_id, JobRow.locked_by == worker, JobRow.status == "running")
+                .values(locked_until=utcnow() + self.lease)
+            )
+            return bool(res.rowcount == 1)  # type: ignore[attr-defined]
+
+    def _holds(self, row: JobRow, worker: str | None) -> bool:
+        """With a worker name, only the holder of the lease can change a running job."""
+        return worker is None or (row.status == "running" and row.locked_by == worker)
+
+    def complete(self, job_id: str, result: dict[str, Any], worker: str | None = None) -> bool:
+        """Save the result. Returns False when ``worker`` lost the lease: the result is dropped."""
         with self.db.session() as s:
             row = s.get(JobRow, job_id)
             if row is None:
                 raise InvariantError("row must be set here")
+            if not self._holds(row, worker):
+                return False
             row.status, row.result, row.finished_at = "succeeded", result, utcnow()
             row.locked_by = row.locked_until = None
+            return True
 
-    def fail(self, job_id: str, error: str, retry: bool = True) -> None:
+    def fail(self, job_id: str, error: str, retry: bool = True, worker: str | None = None) -> bool:
+        """Record a failure. Returns False when ``worker`` lost the lease."""
         with self.db.session() as s:
             row = s.get(JobRow, job_id)
             if row is None:
                 raise InvariantError("row must be set here")
-            row.error = error
+            if not self._holds(row, worker):
+                return False
+            row.error = error[:MAX_ERROR_CHARS] + ("…" if len(error) > MAX_ERROR_CHARS else "")
             row.locked_by = row.locked_until = None
             if retry and row.attempts < self.max_attempts:
                 row.status = "queued"
             else:
                 row.status, row.finished_at = "failed", utcnow()
+            return True

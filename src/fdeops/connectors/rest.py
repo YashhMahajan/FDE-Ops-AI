@@ -5,6 +5,7 @@ the customer API, and maps the response fields back. HTTP errors become typed to
 secret comes from an environment variable and never shows in an error message.
 """
 
+import json
 import os
 import time
 from pathlib import Path
@@ -12,6 +13,7 @@ from typing import Any, Literal
 from urllib.parse import quote
 
 import httpx
+from pydantic import Field
 
 from fdeops.connectors.base import ErrorCode, OpContext, OpResult, OpSpec, ToolError
 from fdeops.core.config import load_model
@@ -62,6 +64,8 @@ class RestConnectorSpec(FrozenModel):
     base_url: str
     auth: RestAuth | None = None
     timeout_s: float = 10.0
+    max_response_bytes: int = Field(2_000_000, ge=1_000, le=50_000_000)
+    """A larger response is an error. A wrong or hostile service cannot fill the memory."""
     operations: list[RestOperation]
 
 
@@ -114,6 +118,21 @@ class RestConnector:
             message = message.replace(self._secret, "[SECRET]")
         return OpResult.failure(ToolError.of(code, message))
 
+    def _read_capped(self, r: httpx.Response) -> bytes | None:
+        """Read the body. Returns None if it is above the limit, and stops reading at the limit."""
+        limit = self.spec.max_response_bytes
+        declared = r.headers.get("content-length", "")
+        if declared.isdigit() and int(declared) > limit:
+            return None
+        chunks: list[bytes] = []
+        size = 0
+        for chunk in r.iter_bytes():
+            size += len(chunk)
+            if size > limit:
+                return None
+            chunks.append(chunk)
+        return b"".join(chunks)
+
     def call(self, op: str, args: dict[str, Any], ctx: OpContext) -> OpResult:
         o = self._ops.get(op)
         if o is None:
@@ -129,26 +148,34 @@ class RestConnector:
         )
         start = time.perf_counter()
         try:
-            r = self._client.request(
+            with self._client.stream(
                 o.method,
                 path,
                 params=params or None,
                 json=body if o.method != "GET" else None,
                 headers=headers,
-            )
+            ) as r:
+                status = r.status_code
+                raw = self._read_capped(r)
         except httpx.TimeoutException:
             return self._fail(ErrorCode.TIMEOUT, f"{self.name} did not respond in time")
         except httpx.TransportError as e:
             return self._fail(ErrorCode.UNAVAILABLE, f"{self.name} is not available: {e}")
         latency = (time.perf_counter() - start) * 1000
-        if r.status_code >= 400:
-            code = STATUS.get(
-                r.status_code,
-                ErrorCode.UNAVAILABLE if r.status_code >= 500 else ErrorCode.INVALID_ARGUMENT,
+        if raw is None:
+            return self._fail(
+                ErrorCode.MALFORMED_RESPONSE,
+                f"the response of {self.name} is too large "
+                f"(limit {self.spec.max_response_bytes} bytes)",
             )
-            return self._fail(code, f"{self.name} returned HTTP {r.status_code}: {r.text[:200]}")
+        if status >= 400:
+            code = STATUS.get(
+                status, ErrorCode.UNAVAILABLE if status >= 500 else ErrorCode.INVALID_ARGUMENT
+            )
+            text = raw[:200].decode("utf-8", errors="replace")
+            return self._fail(code, f"{self.name} returned HTTP {status}: {text}")
         try:
-            data = r.json() if r.content else {}
+            data = json.loads(raw) if raw else {}
         except ValueError:
             return self._fail(ErrorCode.MALFORMED_RESPONSE, f"{self.name} did not return JSON")
         data = _dig(data, o.response.path)

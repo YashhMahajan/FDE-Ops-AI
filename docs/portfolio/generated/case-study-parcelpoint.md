@@ -16,7 +16,7 @@ Parcelpoint (fictional) is the second tenant on the platform. It uses the `logis
 | Lines in the configuration files | 154 |
 | Knowledge base documents | 7 |
 | Domain pack: lines of Python | 1391 |
-| Platform: lines of Python (not in packs) | 12058 |
+| Platform: lines of Python (not in packs) | 12489 |
 | Platform files that name a tenant | 0 |
 | Scenarios in the pack | 11 |
 | Incident files | 2 |

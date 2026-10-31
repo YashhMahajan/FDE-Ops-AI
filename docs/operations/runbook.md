@@ -13,6 +13,10 @@
 
 `GET /metrics` gives Prometheus metrics. It needs an admin key. Refer to the [configuration reference](configuration.md) for each setting.
 
+Compose has no default password. Set `POSTGRES_PASSWORD` before you start the stack, or Compose stops with a message. The API and the web UI listen on `127.0.0.1`. Put a reverse proxy with TLS in front of them. Set `FDEOPS_BIND=0.0.0.0` only when the network is closed.
+
+A worker extends the lease of its job with a heartbeat. If a worker stops, its lease expires in 10 minutes, and a different worker runs the job again. Only the holder of the lease can save the result of a job.
+
 ## 2. Service levels
 
 | measure | target | where to see it |

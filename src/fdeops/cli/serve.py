@@ -4,17 +4,39 @@ import os
 import signal
 import socket
 import threading
+from typing import TYPE_CHECKING
 
 import typer
 
-from fdeops.storage.db import Database
-from fdeops.storage.keys import KeyStore, Role
+from fdeops.storage.roles import Role
+
+if TYPE_CHECKING:
+    from fdeops.storage.db import Database
 
 keys_app = typer.Typer(help="API keys.", no_args_is_help=True)
 db_app = typer.Typer(help="The database.", no_args_is_help=True)
 
 
-def _db() -> Database:
+def _require_server() -> None:
+    """The service commands need the server extra. A base install gets a clear message."""
+    try:
+        import alembic  # noqa: F401
+        import fastapi  # noqa: F401
+        import sqlalchemy  # noqa: F401
+        import uvicorn  # noqa: F401
+    except ImportError as e:
+        typer.echo(
+            f"error: this command needs the server extra ({e.name} is missing).\n"
+            "Install it with: pip install 'fdeops[server]'",
+            err=True,
+        )
+        raise typer.Exit(1) from e
+
+
+def _db() -> "Database":
+    _require_server()
+    from fdeops.storage.db import Database
+
     return Database(os.environ.get("FDEOPS_DATABASE_URL", "sqlite:///fdeops.db"))
 
 
@@ -41,7 +63,8 @@ def db_revision(message: str = typer.Option(..., "-m", "--message")) -> None:
     from alembic import command
     from alembic.config import Config
 
-    from fdeops.storage.db import MIGRATIONS
+    _require_server()
+    from fdeops.storage.db import MIGRATIONS, Database
 
     with tempfile.TemporaryDirectory() as tmp:
         db = Database(f"sqlite:///{Path(tmp) / 'revision.db'}")
@@ -63,6 +86,7 @@ def db_purge_tenant(
     """Delete all data of a tenant (rows, keys, jobs, artifacts). Take a backup first."""
     from pathlib import Path
 
+    _require_server()
     from fdeops.storage.repo import purge_tenant
 
     if confirm != tenant:
@@ -83,6 +107,8 @@ def keys_create(
     tenant: str | None = typer.Option(None, help="Omit only for an admin key"),
 ) -> None:
     """Make an API key. The command shows the key one time."""
+    from fdeops.storage.keys import KeyStore
+
     db = _db()
     db.init()
     with db.session() as s:
@@ -94,6 +120,8 @@ def keys_create(
 
 @keys_app.command("list")
 def keys_list(tenant: str | None = typer.Option(None)) -> None:
+    from fdeops.storage.keys import KeyStore
+
     db = _db()
     db.init()
     with db.session() as s:
@@ -106,6 +134,8 @@ def keys_list(tenant: str | None = typer.Option(None)) -> None:
 
 @keys_app.command("revoke")
 def keys_revoke(key_id: str) -> None:
+    from fdeops.storage.keys import KeyStore
+
     db = _db()
     with db.session() as s:
         KeyStore(s).revoke(key_id)
@@ -117,11 +147,14 @@ def serve(
     port: int = typer.Option(8000),
 ) -> None:
     """Start the API service (uvicorn). Settings come from FDEOPS_* environment variables."""
+    _require_server()
     import uvicorn
 
     from fdeops.api.app import create_app
 
-    uvicorn.run(create_app(), host=host, port=port)
+    # server_header=False: the response does not tell the server software.
+    # timeout_keep_alive: a client that holds an idle connection cannot keep a slot for long.
+    uvicorn.run(create_app(), host=host, port=port, server_header=False, timeout_keep_alive=5)
 
 
 def worker(
@@ -129,11 +162,13 @@ def worker(
     idle: float = typer.Option(2.0),
 ) -> None:
     """Start a job worker. Run more than one for more throughput."""
+    _require_server()
     from fdeops.api.app import Settings
     from fdeops.jobs.handlers import Context, handlers
     from fdeops.jobs.queue import JobQueue
     from fdeops.jobs.worker import Worker
     from fdeops.storage.artifacts import LocalArtifactStore
+    from fdeops.storage.db import Database
 
     name = name or socket.gethostname()
     settings = Settings.from_env()

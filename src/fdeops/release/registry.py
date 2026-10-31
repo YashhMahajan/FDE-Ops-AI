@@ -4,11 +4,11 @@ Only ``approve`` and ``rollback`` move the production pointer, and each needs an
 """
 
 import json
-import os
 from datetime import UTC, datetime
 from pathlib import Path
 
 from fdeops.core.errors import ConfigError
+from fdeops.core.fsio import atomic_write_text
 from fdeops.core.ids import new_id
 from fdeops.release.models import (
     ApprovalRecord,
@@ -20,10 +20,7 @@ from fdeops.release.models import (
 
 
 def _write(path: Path, text: str) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(path.suffix + ".tmp")
-    tmp.write_text(text, encoding="utf-8")
-    os.replace(tmp, path)
+    atomic_write_text(path, text)
 
 
 class ReleaseRegistry:

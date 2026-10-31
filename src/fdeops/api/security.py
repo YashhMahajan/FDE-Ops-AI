@@ -41,6 +41,8 @@ class RateLimiter:
     per_minute: float
     burst: int
     clock: Callable[[], float] | None = None
+    max_buckets: int = 10_000
+    """Upper limit of the table. A flood of different keys or addresses cannot grow it more."""
     _buckets: dict[str, _Bucket] = field(default_factory=dict)
     _lock: threading.Lock = field(default_factory=threading.Lock)
 
@@ -54,6 +56,8 @@ class RateLimiter:
         with self._lock:
             b = self._buckets.get(key)
             if b is None:
+                if len(self._buckets) >= self.max_buckets:
+                    self._prune(now, rate)
                 b = self._buckets[key] = _Bucket(tokens=float(self.burst), updated=now)
             b.tokens = min(float(self.burst), b.tokens + (now - b.updated) * rate)
             b.updated = now
@@ -61,6 +65,27 @@ class RateLimiter:
                 b.tokens -= 1.0
                 return True, 0.0
             return False, (1.0 - b.tokens) / rate if rate > 0 else 60.0
+
+    def _prune(self, now: float, rate: float) -> None:
+        """Make room. The caller holds the lock.
+
+        A bucket that has refilled to ``burst`` is the same as a new bucket, thus dropping it
+        loses nothing. If the table is still full, drop the buckets that are the closest to full.
+        A client that the limiter blocks keeps its bucket the longest.
+        """
+        burst = float(self.burst)
+        projected = {
+            k: min(burst, b.tokens + (now - b.updated) * rate) for k, b in self._buckets.items()
+        }
+        for k, tokens in projected.items():
+            if tokens >= burst:
+                del self._buckets[k]
+        target = int(self.max_buckets * 0.9)
+        if len(self._buckets) > target:
+            for k in sorted(self._buckets, key=lambda key: projected[key], reverse=True)[
+                : len(self._buckets) - target
+            ]:
+                del self._buckets[k]
 
 
 LATENCY_BUCKETS = (0.01, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0)

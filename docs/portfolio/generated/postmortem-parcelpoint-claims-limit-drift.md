@@ -32,12 +32,12 @@ The monitor saw 8 of 8 failed trials. 0 failure(s) had no flag.
 | step | event | evidence |
 |---|---|---|
 | 0 | The policy document changes. The index keeps the previous section. | incident `claims-limit-drift` |
-| 1 | First alarm: `stale_context` after 8 ticket(s) (about 7 minutes). | run `run_01m5caq74z3z61cz4atw05h0bj` |
-| 2 | The evaluation measures the regression (-0.121). | runs `run_01m5caq6895j16bgcvfbw6r75g` and `run_01m5caq74z3z61cz4atw05h0bj` |
-| 3 | Diagnosis: `stale_knowledge:damage_claim_large`, confirmed by intervention. | run `run_01m5caq7g81qwnyzhv7hvw5g4k` |
-| 4 | The improvement loop proposes `freshness_filter` and stops at `pending_approval`. | proposal `imp_01m5caq83d021bgjzgjd44rsz2` |
-| 5 | A person with the approver role approves v2. | decision `dec_01m5caq9zn8rerj9vzzxf391bz` |
-| 6 | The monitor gives 0 alert(s) for v2. | run `run_01m5caq9g3dbxqgxfb2h7vv201` |
+| 1 | First alarm: `stale_context` after 8 ticket(s) (about 7 minutes). | run `run_01m697s4988178hjaq07g3z7sn` |
+| 2 | The evaluation measures the regression (-0.121). | runs `run_01m697s1mv6mk91sr274vfc79m` and `run_01m697s4988178hjaq07g3z7sn` |
+| 3 | Diagnosis: `stale_knowledge:damage_claim_large`, confirmed by intervention. | run `run_01m697s5a9b3zfcg8sm38kqhfn` |
+| 4 | The improvement loop proposes `freshness_filter` and stops at `pending_approval`. | proposal `imp_01m697s76ednvhq8fvz5gqxw8e` |
+| 5 | A person with the approver role approves v2. | decision `dec_01m697sczydj4h3k4sps7f6bhp` |
+| 6 | The monitor gives 0 alert(s) for v2. | run `run_01m697sbhv5vp471r0djbq6pn0` |
 
 ## Root cause
 

@@ -68,7 +68,8 @@ def test_retrying_llm_backs_off_on_rate_limit() -> None:
     inner = Flaky(failures=2)
     out = RetryingLLM(inner, clock=clock, max_attempts=4, base_delay_s=2.0).complete(REQ)
     assert out.content == "done" and inner.calls == 3
-    assert (clock.now() - datetime(2026, 1, 1, tzinfo=UTC)).total_seconds() == pytest.approx(6.0)
+    waited = (clock.now() - datetime(2026, 1, 1, tzinfo=UTC)).total_seconds()
+    assert 3.0 <= waited <= 6.0  # two retries: 2 s and 4 s, each cut by up to half (jitter)
     assert RetryingLLM(inner, clock=clock).provider == "flaky"
 
 

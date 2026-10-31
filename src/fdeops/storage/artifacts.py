@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Protocol
 
 from fdeops.core.errors import ConfigError
+from fdeops.core.fsio import atomic_write_text
 
 
 class ArtifactStore(Protocol):
@@ -29,11 +30,7 @@ class LocalArtifactStore:
         return p
 
     def put_text(self, key: str, text: str) -> str:
-        p = self._path(key)
-        p.parent.mkdir(parents=True, exist_ok=True)
-        tmp = p.with_suffix(p.suffix + ".tmp")
-        tmp.write_text(text, encoding="utf-8")
-        tmp.replace(p)
+        atomic_write_text(self._path(key), text)
         return key
 
     def get_text(self, uri: str) -> str:

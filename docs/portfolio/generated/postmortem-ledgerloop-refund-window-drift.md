@@ -21,7 +21,7 @@ The monitor uses only signals that a live deployment can see. It does not use th
 
 | signal | severity | reference | during the incident | alarm after | time |
 |---|---|---:|---:|---:|---|
-| `stale_context` | ticket | 0.0% | 85.5% | 1 ticket(s) | about 4 minutes |
+| `stale_context` | ticket | 0.0% | 84.1% | 1 ticket(s) | about 4 minutes |
 | `policy_flag` | page | 0.0% | 10.1% | 48 ticket(s) | about 3.6 hours |
 | `critical_flag` | page | 0.0% | 10.1% | 50 ticket(s) | about 3.8 hours |
 
@@ -32,12 +32,12 @@ The monitor saw 7 of 7 failed trials. 0 failure(s) had no flag.
 | step | event | evidence |
 |---|---|---|
 | 0 | The policy document changes. The index keeps the previous section. | incident `refund-window-drift` |
-| 1 | First alarm: `stale_context` after 1 ticket(s) (about 4 minutes). | run `run_01m5caq2nydvj8xsqh0d3hcm7d` |
-| 2 | The evaluation measures the regression (-0.101). | runs `run_01m5caq1va0gsv94npg4xvm34x` and `run_01m5caq2nydvj8xsqh0d3hcm7d` |
-| 3 | Diagnosis: `stale_knowledge:refund_outside_window`, confirmed by intervention. | run `run_01m5caq319fvgj9j9h3szd8702` |
-| 4 | The improvement loop proposes `freshness_filter` and stops at `pending_approval`. | proposal `imp_01m5caq3k678t7b2jp68qr98eq` |
-| 5 | A person with the approver role approves v2. | decision `dec_01m5caq5bpat6tywfms5da9t9y` |
-| 6 | The monitor gives 0 alert(s) for v2. | run `run_01m5caq4z4b7m6hsbeg423wy2k` |
+| 1 | First alarm: `stale_context` after 1 ticket(s) (about 4 minutes). | run `run_01m697rnyw8y7eyanc32sgezyb` |
+| 2 | The evaluation measures the regression (-0.101). | runs `run_01m697rkav516hptphygyyagw4` and `run_01m697rnyw8y7eyanc32sgezyb` |
+| 3 | Diagnosis: `stale_knowledge:refund_outside_window`, confirmed by intervention. | run `run_01m697rq494xwecn5b6fwcwedf` |
+| 4 | The improvement loop proposes `freshness_filter` and stops at `pending_approval`. | proposal `imp_01m697rs1getej61ab9dhexkyv` |
+| 5 | A person with the approver role approves v2. | decision `dec_01m697ryq8a01akdm92j4rwvn9` |
+| 6 | The monitor gives 0 alert(s) for v2. | run `run_01m697rxgga7qgmnskdmfas49c` |
 
 ## Root cause
 

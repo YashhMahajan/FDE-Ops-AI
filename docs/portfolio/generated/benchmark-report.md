@@ -21,9 +21,9 @@ Each interval is a 95% interval. With more than one trial for each case, the int
 | ledgerloop | v1 during the incident | 89.9% | 80.5% to 95.0% | 7 | 2,298 | 3,481 |
 | ledgerloop | v2 with the fix | 100.0% | 94.7% to 100.0% | 0 | 2,064 | 3,285 |
 | ledgerloop | FAQ baseline, no LLM | 47.8% | 36.5% to 59.4% | 0 | 0 | 0 |
-| parcelpoint | v1 before the incident | 100.0% | 94.5% to 100.0% | 0 | 2,026 | 2,742 |
-| parcelpoint | v1 during the incident | 87.9% | 77.9% to 93.7% | 8 | 2,025 | 3,166 |
-| parcelpoint | v2 with the fix | 100.0% | 94.5% to 100.0% | 0 | 2,026 | 2,833 |
+| parcelpoint | v1 before the incident | 100.0% | 94.5% to 100.0% | 0 | 2,026 | 2,741 |
+| parcelpoint | v1 during the incident | 87.9% | 77.9% to 93.7% | 8 | 2,025 | 3,150 |
+| parcelpoint | v2 with the fix | 100.0% | 94.5% to 100.0% | 0 | 2,026 | 2,815 |
 | parcelpoint | FAQ baseline, no LLM | 18.2% | 10.7% to 29.1% | 0 | 0 | 0 |
 
 ## Paired comparisons

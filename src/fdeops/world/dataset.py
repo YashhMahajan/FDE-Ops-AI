@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any
 
 from fdeops.core.errors import ConfigError
+from fdeops.core.fsio import atomic_write_text
 from fdeops.core.hashing import canonical_json, content_hash
 from fdeops.core.ids import stable_id
 from fdeops.core.model import FrozenModel
@@ -126,9 +127,9 @@ def dataset_dir(root: Path, tenant_id: str, name: str, version: int) -> Path:
 def save_dataset(ds: Dataset, root: Path) -> Path:
     out = dataset_dir(root, ds.tenant_id, ds.name, ds.version)
     out.mkdir(parents=True, exist_ok=True)
-    with (out / f"{ds.split}.jsonl").open("w", encoding="utf-8") as f:
-        for case in ds.cases:
-            f.write(canonical_json(case) + "\n")
+    atomic_write_text(
+        out / f"{ds.split}.jsonl", "".join(canonical_json(case) + "\n" for case in ds.cases)
+    )
     manifest_path = out / "manifest.json"
     manifest = json.loads(manifest_path.read_text()) if manifest_path.exists() else {}
     manifest.update(
@@ -146,7 +147,7 @@ def save_dataset(ds: Dataset, root: Path) -> Path:
         "n_cases": len(ds.cases),
         "scenarios": _counts(c.scenario for c in ds.cases),
     }
-    manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
+    atomic_write_text(manifest_path, json.dumps(manifest, indent=2, sort_keys=True) + "\n")
     return out
 
 
