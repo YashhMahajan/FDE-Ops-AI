@@ -11,6 +11,8 @@ make check
 
 `make check` runs the linter, the type checks, the layer contract, the check of the documents and all tests. A change must pass it before you commit it.
 
+You can also use the file `.pre-commit-config.yaml`. It runs the linter and the type check on each commit.
+
 ## Rules for a change
 
 1. **Tests.** Each change of behavior has a test. A test must fail when the behavior is wrong. Do not write an assertion that cannot fail.
@@ -21,6 +23,9 @@ make check
 6. **Dependencies.** Add a dependency only when it is necessary. CI examines its license and its known vulnerabilities.
 7. **Documents.** Use the terms in the [glossary](docs/glossary.md). Run `uv run fdeops docs check README.md docs`.
 8. **Fictional data only.** Do not add real customer data, real names or real tickets.
+9. **Generated documents.** If a change moves a number in `docs/portfolio/generated/`, run `uv run fdeops portfolio` and commit the new documents. A test fails when they show the wrong numbers.
+10. **Diagrams.** Change `scripts/make_diagrams.py`, then run `python3 scripts/make_diagrams.py` and `node scripts/render_diagrams.mjs`. Each number in a diagram must come from a record of the repository.
+11. **Install test.** A change must not make the base package need a service dependency. CI installs the wheel without extras and runs the commands.
 
 ## Database migrations
 
