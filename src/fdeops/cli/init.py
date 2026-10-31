@@ -1,6 +1,7 @@
 """``fdeops init``: make a starter tenant folder for your own workflow."""
 
 import re
+import shutil
 from importlib import resources
 from pathlib import Path
 
@@ -64,6 +65,7 @@ def init(
 ) -> None:
     """Make a starter tenant: policy, knowledge base, gates, monitors and datasets."""
     tid = tenant_id or slugify(name)
+    created = not directory.exists()
     try:
         files = scaffold(directory, pack, name, tid)
         configs = directory.parent.parent / "configs" / "agents"
@@ -73,6 +75,8 @@ def init(
             typer.echo(f"wrote {agent}")
         tenant = load_tenant(directory)
     except FdeOpsError as e:
+        if created:  # do not leave a half-made tenant folder
+            shutil.rmtree(directory, ignore_errors=True)
         typer.echo(f"error: {e}", err=True)
         raise typer.Exit(1) from e
     typer.echo(f"made tenant {tenant.id} in {directory} ({len(files)} files, pack {pack})")

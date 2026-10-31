@@ -9,7 +9,7 @@ import json
 import logging
 import os
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Annotated, Any
@@ -47,8 +47,9 @@ from fdeops.release.models import load_gates
 from fdeops.release.registry import ReleaseRegistry
 from fdeops.storage.artifacts import LocalArtifactStore
 from fdeops.storage.db import Database, JobRow
-from fdeops.storage.keys import KeyStore, Principal, Role
+from fdeops.storage.keys import KeyStore, Principal
 from fdeops.storage.repo import NotFound, Repository
+from fdeops.storage.roles import Role
 
 log = logging.getLogger("fdeops.api")
 
@@ -58,6 +59,15 @@ class _JsonFormatter(logging.Formatter):
         data = {"level": record.levelname, "logger": record.name, "msg": record.getMessage()}
         data.update(getattr(record, "fields", {}))
         return json.dumps(data, default=str)
+
+
+def _number(env: Mapping[str, str], name: str, default: str, kind: Callable[[str], Any]) -> Any:
+    """Read a number from the environment. A bad value stops the start with a clear message."""
+    raw = env.get(name, default)
+    try:
+        return kind(raw)
+    except ValueError:
+        raise ConfigError(f"{name} must be a number (got {raw!r})") from None
 
 
 @dataclass(frozen=True)
@@ -86,10 +96,10 @@ class Settings:
             registry_dir=Path(e.get("FDEOPS_REGISTRY_DIR", "releases")),
             configs_dir=Path(e.get("FDEOPS_CONFIGS_DIR", "configs")),
             cors_origins=tuple(o for o in e.get("FDEOPS_CORS_ORIGINS", "").split(",") if o),
-            rate_per_minute=float(e.get("FDEOPS_RATE_PER_MINUTE", "120")),
-            expensive_per_minute=float(e.get("FDEOPS_EXPENSIVE_PER_MINUTE", "10")),
-            auth_failures_per_minute=float(e.get("FDEOPS_AUTH_FAILURES_PER_MINUTE", "10")),
-            max_body_bytes=int(e.get("FDEOPS_MAX_BODY_BYTES", "1000000")),
+            rate_per_minute=_number(e, "FDEOPS_RATE_PER_MINUTE", "120", float),
+            expensive_per_minute=_number(e, "FDEOPS_EXPENSIVE_PER_MINUTE", "10", float),
+            auth_failures_per_minute=_number(e, "FDEOPS_AUTH_FAILURES_PER_MINUTE", "10", float),
+            max_body_bytes=_number(e, "FDEOPS_MAX_BODY_BYTES", "1000000", int),
         )
 
     def validate(self) -> None:
@@ -100,8 +110,14 @@ class Settings:
             raise ConfigError("FDEOPS_CONFIGS_DIR is not a folder", self.configs_dir)
         if "*" in self.cors_origins:
             raise ConfigError("FDEOPS_CORS_ORIGINS must list origins. '*' is not permitted.")
-        if min(self.rate_per_minute, self.expensive_per_minute, self.max_body_bytes) <= 0:
-            raise ConfigError("rate limits and FDEOPS_MAX_BODY_BYTES must be more than zero")
+        limits = (
+            self.rate_per_minute,
+            self.expensive_per_minute,
+            self.auth_failures_per_minute,
+            self.max_body_bytes,
+        )
+        if min(limits) <= 0 or any(x != x or x == float("inf") for x in limits):  # NaN, infinity
+            raise ConfigError("rate limits and FDEOPS_MAX_BODY_BYTES must be finite and above zero")
 
 
 class LLMSettings(BaseModel):

@@ -3,7 +3,6 @@
 import hashlib
 import secrets
 from dataclasses import dataclass
-from enum import StrEnum
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -11,20 +10,9 @@ from sqlalchemy.orm import Session
 from fdeops.core.errors import ConfigError
 from fdeops.core.ids import new_id
 from fdeops.storage.db import ApiKeyRow, utcnow
+from fdeops.storage.roles import Role
 
-
-class Role(StrEnum):
-    VIEWER = "viewer"
-    ENGINEER = "engineer"
-    APPROVER = "approver"
-    ADMIN = "admin"
-
-    @property
-    def rank(self) -> int:
-        return ["viewer", "engineer", "approver", "admin"].index(self.value)
-
-    def allows(self, required: "Role") -> bool:
-        return self.rank >= required.rank
+__all__ = ["KeyStore", "Principal", "Role"]
 
 
 @dataclass(frozen=True)

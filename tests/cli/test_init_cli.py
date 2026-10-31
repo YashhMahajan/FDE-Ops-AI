@@ -62,3 +62,19 @@ def test_init_refuses_a_bad_id_and_an_unknown_pack(tmp_path: Path) -> None:
 
 def test_slugify() -> None:
     assert slugify("  Acme & Sons, Inc.! ") == "acme-sons-inc"
+
+
+def test_init_removes_the_folder_it_made_when_the_new_tenant_does_not_load(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from fdeops.cli import init as init_module
+    from fdeops.core.errors import ConfigError
+
+    def broken(_root: Path) -> None:
+        raise ConfigError("the starter policy is not valid")
+
+    monkeypatch.setattr(init_module, "load_tenant", broken)
+    target = tmp_path / "tenants" / "acme"
+    result = CliRunner().invoke(app, ["init", str(target), "--name", "Acme Co"])
+    assert result.exit_code == 1 and "not valid" in result.output
+    assert not target.exists()

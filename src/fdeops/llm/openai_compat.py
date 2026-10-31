@@ -98,7 +98,27 @@ class OpenAICompatibleLLM:
         if r.status_code >= 400:
             retryable = r.status_code == 429 or r.status_code >= 500
             raise LLMUnavailable(f"HTTP {r.status_code}: {r.text[:300]}", retryable=retryable)
-        data = r.json()
+        try:
+            data = r.json()
+        except ValueError:
+            raise LLMUnavailable(
+                f"the response is not JSON: {r.text[:200]!r}", retryable=True
+            ) from None
+        try:
+            return self._to_response(data, request, latency_ms)
+        except (KeyError, IndexError, TypeError, AttributeError, ValueError) as e:
+            raise LLMUnavailable(
+                f"the response has an unexpected shape ({type(e).__name__}: {e})", retryable=True
+            ) from e
+
+    def _to_response(self, data: Any, request: LLMRequest, latency_ms: float) -> LLMResponse:
+        if isinstance(data, dict) and isinstance(data.get("error"), dict | str):
+            # Some providers (OpenRouter) answer HTTP 200 with an error in the body.
+            error = data["error"]
+            code = error.get("code") if isinstance(error, dict) else None
+            message = error.get("message") if isinstance(error, dict) else error
+            retryable = not (isinstance(code, int) and 400 <= code < 500 and code != 429)
+            raise LLMUnavailable(f"provider error: {str(message)[:300]}", retryable=retryable)
         choice = data["choices"][0]
         msg = choice.get("message", {})
         calls = tuple(

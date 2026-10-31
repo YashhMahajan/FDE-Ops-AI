@@ -11,6 +11,36 @@ log = logging.getLogger("fdeops.worker")
 Handler = Callable[[dict[str, Any]], dict[str, Any]]
 
 
+MAX_BACKOFF_S = 60.0
+
+
+class _Heartbeat:
+    """Extend the lease of a job in a thread while the handler works."""
+
+    def __init__(self, queue: JobQueue, job_id: str, worker: str) -> None:
+        self._queue, self._job_id, self._worker = queue, job_id, worker
+        self._stop = threading.Event()
+        self._thread = threading.Thread(target=self._run, name=f"lease-{job_id}", daemon=True)
+
+    def _run(self) -> None:
+        interval = max(0.05, self._queue.lease.total_seconds() / 3)
+        while not self._stop.wait(interval):
+            try:
+                if not self._queue.heartbeat(self._job_id, self._worker):
+                    log.warning("job %s: the lease is lost", self._job_id)
+                    return
+            except Exception:  # one missed beat is not fatal: the next one comes
+                log.exception("job %s: the heartbeat failed", self._job_id)
+
+    def __enter__(self) -> "_Heartbeat":
+        self._thread.start()
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        self._stop.set()
+        self._thread.join(timeout=5)
+
+
 class Worker:
     def __init__(self, queue: JobQueue, handlers: dict[str, Handler], name: str) -> None:
         self.queue = queue
@@ -24,15 +54,20 @@ class Worker:
             return False
         handler = self.handlers.get(job.kind)
         if handler is None:
-            self.queue.fail(job.id, f"no handler for job kind {job.kind!r}", retry=False)
+            self.queue.fail(
+                job.id, f"no handler for job kind {job.kind!r}", retry=False, worker=self.name
+            )
             return True
-        try:
-            result = handler({**job.payload, "_tenant_id": job.tenant_id, "_job_id": job.id})
-        except Exception as e:  # noqa: BLE001 - a job failure must not stop the worker
-            log.warning("job %s failed: %s", job.id, e)
-            self.queue.fail(job.id, f"{type(e).__name__}: {e}")
-            return True
-        self.queue.complete(job.id, result)
+        with _Heartbeat(self.queue, job.id, self.name):
+            try:
+                result = handler({**job.payload, "_tenant_id": job.tenant_id, "_job_id": job.id})
+            except Exception as e:  # noqa: BLE001 - a job failure must not stop the worker
+                log.warning("job %s failed: %s", job.id, e)
+                if not self.queue.fail(job.id, f"{type(e).__name__}: {e}", worker=self.name):
+                    log.warning("job %s: the lease was lost, the failure is dropped", job.id)
+                return True
+        if not self.queue.complete(job.id, result, worker=self.name):
+            log.warning("job %s: the lease was lost, the result is dropped", job.id)
         return True
 
     def run_forever(self, idle_s: float = 2.0, stop: threading.Event | None = None) -> None:
@@ -43,7 +78,17 @@ class Worker:
         worker runs it again.
         """
         stop = stop or threading.Event()
+        failures = 0
         while not stop.is_set():
-            if not self.run_once():
+            try:
+                busy = self.run_once()
+                failures = 0
+            except Exception:  # a database error must not kill the worker
+                failures += 1
+                delay = min(MAX_BACKOFF_S, idle_s * 2**failures)
+                log.exception("worker %s: queue error, new try in %.0f s", self.name, delay)
+                stop.wait(delay)
+                continue
+            if not busy:
                 stop.wait(idle_s)
         log.info("worker %s stopped", self.name)

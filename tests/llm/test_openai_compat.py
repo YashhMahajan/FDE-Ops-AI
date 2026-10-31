@@ -166,3 +166,27 @@ def test_api_key_sent_as_bearer() -> None:
         base_url="http://llm.test/v1", model="qwen", api_key="sk-test", client=http
     ).complete(REQ)
     assert seen["auth"] == "Bearer sk-test"
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        {"error": {"message": "Provider returned error", "code": 502}},  # HTTP 200 with an error
+        {"choices": []},
+        {"choices": "none"},
+        {"choices": [{"message": {"tool_calls": [{"id": "c", "function": {}}]}}]},
+        ["not", "an", "object"],
+    ],
+)
+def test_a_malformed_200_response_is_a_typed_retryable_error(body: Any) -> None:
+    llm = client(lambda r: httpx.Response(200, json=body))
+    with pytest.raises(LLMUnavailable) as exc:
+        llm.complete(REQ)
+    assert exc.value.retryable is True
+
+
+def test_a_200_response_that_is_not_json_is_a_typed_retryable_error() -> None:
+    llm = client(lambda r: httpx.Response(200, text="<html>Bad gateway</html>"))
+    with pytest.raises(LLMUnavailable, match="not JSON") as exc:
+        llm.complete(REQ)
+    assert exc.value.retryable is True

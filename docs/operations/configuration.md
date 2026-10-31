@@ -22,6 +22,8 @@ The service reads its settings from environment variables at start-up. It examin
 | `FDEOPS_AUTH_FAILURES_PER_MINUTE` | `10` | Requests with a missing or wrong key, for each client address in one minute. |
 | `FDEOPS_MAX_BODY_BYTES` | `1000000` | The maximum size of a request body. A larger request gets HTTP 413. |
 
+The counters for each key and each address keep at most 10,000 entries. The limiter drops the entries that have no effect first. The counter for wrong keys uses the address of the peer. Behind a reverse proxy, this address is the address of the proxy, thus set the limit for wrong keys in the proxy too. A setting that is not a number, or that is zero, stops the start with a message.
+
 Each API replica keeps its own rate counters. With more than one replica, the real limit is the limit multiplied by the number of replicas. Use a limit in the reverse proxy for a strict global limit.
 
 ## Models

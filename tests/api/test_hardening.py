@@ -192,3 +192,32 @@ def test_settings_fail_fast(tmp_path: Path) -> None:
     ok = replace(base, tenants_dir=ROOT / "tenants", cors_origins=("*",))
     with pytest.raises(ConfigError):
         ok.validate()
+
+
+def test_settings_reject_a_bad_number_with_a_clear_message(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    from fdeops.api.app import Settings
+    from fdeops.core.errors import ConfigError
+
+    monkeypatch.setenv("FDEOPS_RATE_PER_MINUTE", "lots")
+    with pytest.raises(ConfigError, match="FDEOPS_RATE_PER_MINUTE must be a number"):
+        Settings.from_env()
+
+
+@pytest.mark.parametrize("name", ["FDEOPS_AUTH_FAILURES_PER_MINUTE", "FDEOPS_RATE_PER_MINUTE"])
+@pytest.mark.parametrize("value", ["0", "-1", "nan", "inf"])
+def test_settings_reject_limits_that_do_nothing_or_block_everything(
+    monkeypatch,
+    tmp_path,
+    name: str,
+    value: str,  # type: ignore[no-untyped-def]
+) -> None:
+    from fdeops.api.app import Settings
+    from fdeops.core.errors import ConfigError
+
+    (tmp_path / "tenants").mkdir()
+    (tmp_path / "configs").mkdir()
+    monkeypatch.setenv("FDEOPS_TENANTS_DIR", str(tmp_path / "tenants"))
+    monkeypatch.setenv("FDEOPS_CONFIGS_DIR", str(tmp_path / "configs"))
+    monkeypatch.setenv(name, value)
+    with pytest.raises(ConfigError, match="finite and above zero"):
+        Settings.from_env().validate()

@@ -9,6 +9,7 @@ from pathlib import Path
 
 import numpy as np
 
+from fdeops.core.fsio import atomic_write_text
 from fdeops.core.model import FrozenModel
 from fdeops.core.provenance import Provenance
 from fdeops.eval.runner import RunResult, TrialResult
@@ -252,10 +253,10 @@ def render_markdown(s: RunSummary) -> str:
 def save_run(run: RunResult, root: Path) -> Path:
     out = root / run.run_id
     out.mkdir(parents=True, exist_ok=True)
-    (out / "run.json").write_text(run.model_dump_json(), encoding="utf-8")
+    atomic_write_text(out / "run.json", run.model_dump_json())
     summary = summarize(run)
-    (out / "summary.json").write_text(summary.model_dump_json(indent=2), encoding="utf-8")
-    (out / "report.md").write_text(render_markdown(summary), encoding="utf-8")
+    atomic_write_text(out / "summary.json", summary.model_dump_json(indent=2))
+    atomic_write_text(out / "report.md", render_markdown(summary))
     return out
 
 

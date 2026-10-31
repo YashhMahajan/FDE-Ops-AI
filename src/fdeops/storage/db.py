@@ -10,7 +10,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from sqlalchemy import JSON, Boolean, DateTime, Float, Integer, String, Text, create_engine
+from sqlalchemy import JSON, Boolean, DateTime, Float, Integer, String, Text, create_engine, event
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sessionmaker
 
@@ -120,15 +120,32 @@ FIRST_REVISION = "0001"
 MIGRATION_LOCK = 4_242_001
 
 
+def _sqlite_pragmas(dbapi_connection: Any, _record: Any) -> None:
+    """WAL: a writer does not block readers, and a crash does not damage the file."""
+    cursor = dbapi_connection.cursor()
+    cursor.execute("PRAGMA journal_mode=WAL")
+    cursor.execute("PRAGMA synchronous=NORMAL")
+    cursor.close()
+
+
 class Database:
     def __init__(self, url: str) -> None:
         url = normalize_url(url)
         self.url = url
         self.is_sqlite = url.startswith("sqlite")
-        kwargs: dict[str, Any] = {"future": True}
+        kwargs: dict[str, Any] = {
+            "future": True,
+            # Test a pooled connection before use. After a database restart or a failover, the
+            # pool does not hand a dead connection to a request.
+            "pool_pre_ping": True,
+            # Servers and proxies close idle connections. Replace them before that happens.
+            "pool_recycle": 1800,
+        }
         if self.is_sqlite:
             kwargs["connect_args"] = {"check_same_thread": False, "timeout": 30}
         self.engine: Engine = create_engine(url, **kwargs)
+        if self.is_sqlite and ":memory:" not in url:
+            event.listen(self.engine, "connect", _sqlite_pragmas)
         self._sessions = sessionmaker(self.engine, expire_on_commit=False)
 
     def init(self) -> None:

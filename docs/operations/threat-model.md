@@ -21,6 +21,11 @@
 | A path in a request reads files that are not in the permitted folders | Relative paths only, no `..`, a check of the resolved path, and a pattern for tenant IDs. | `test_bad_run_request_is_422_with_reason`, `test_bad_tenant_ids_are_not_found` |
 | An error shows internal data | A general handler gives "internal error" and a request ID. The log keeps the stack trace. | `test_unhandled_error_is_500_without_internals` |
 | Text in a ticket or in the knowledge base tells the agent to do a wrong task | The permission guard and the policy monitor operate on each tool call, not on the text. Injection scenarios are part of the datasets. | `tests/connectors`, the injection scenarios |
+| Many clients make the rate counters use all memory | The table of counters has a limit of 10,000 entries. A client that the limiter refuses keeps its entry. | `tests/api/test_limiter_memory.py` |
+| A service or a connector answers with an endless response | The REST connector stops at `max_response_bytes` (2 MB). | `tests/connectors/test_rest.py` |
+| A long job runs two times, or a stale worker overwrites a result | A heartbeat extends the lease. Only the holder of the lease can save a result. | `tests/jobs/test_lease.py` |
+| A default password stays in a deployment | Compose has no default password, and the ports use `127.0.0.1`. The containers have no capabilities and a read-only file system. | CI job `compose` |
+| A crash gives a record file that has only half of its text | Record files use a unique temporary file, `fsync` and an atomic rename. | `tests/core/test_fsio.py` |
 | A retry makes a refund two times | Idempotency keys on each operation that changes data. | `tests/connectors/test_resilience.py` |
 | A dependency has a known vulnerability | Audits of the Python and web dependencies in CI, and weekly update requests. | CI job `security` |
 | A secret goes into the repository | A check of the full git history in CI. Keys come only from the environment. | CI job `security` |

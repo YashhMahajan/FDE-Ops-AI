@@ -3,6 +3,7 @@
 name: crm
 base_url: https://crm.customer.example/api
 auth: {header: Authorization, env: CRM_TOKEN, prefix: "Bearer "}
+max_response_bytes: 2000000  # a larger response is an error
 timeout_s: 10
 operations:
   - name: lookup_customer

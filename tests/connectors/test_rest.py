@@ -176,3 +176,37 @@ def test_secret_never_in_error_messages(monkeypatch: pytest.MonkeyPatch) -> None
     c = connector(lambda r: httpx.Response(401, text="bad token secret-token"), monkeypatch)
     r = c.call("lookup_customer", {"email": "x"}, ctx())
     assert r.error is not None and "secret-token" not in r.error.message
+
+
+def test_an_oversized_response_is_refused_without_reading_it_all(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    read = {"bytes": 0}
+
+    def chunks() -> Any:
+        for _ in range(1_000):  # a service that never stops: 1 GB if a client reads it all
+            read["bytes"] += 1_000_000
+            yield b"x" * 1_000_000
+
+    def handler(r: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, content=chunks())
+
+    spec = {**SPEC, "max_response_bytes": 100_000}
+    monkeypatch.setenv("CRM_TOKEN", "secret-token")
+    c = RestConnector(
+        RestConnectorSpec.model_validate(spec), transport=httpx.MockTransport(handler)
+    )
+    r = c.call("lookup_customer", {"email": "a@b.example"}, ctx())
+    assert not r.ok and r.error is not None and r.error.code.value == "MALFORMED_RESPONSE"
+    assert "too large" in r.error.message
+    assert read["bytes"] <= 2_000_000  # it stopped after the first chunks
+
+
+def test_a_large_content_length_is_refused_before_the_body(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def handler(r: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, headers={"content-length": "50000000"}, content=b"{}")
+
+    r = connector(handler, monkeypatch).call("lookup_customer", {"email": "a@b.example"}, ctx())
+    assert not r.ok and r.error is not None and "too large" in r.error.message
